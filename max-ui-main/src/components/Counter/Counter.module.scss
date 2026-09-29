@@ -1,0 +1,62 @@
+@use '../../styles/shared-mixins/typography';
+
+@mixin withoutBackgroundColor {
+  background-color: var(--counter-contrast);
+}
+@mixin textColorPrimary {
+  color: var(--text-primary-inverse-static);
+}
+
+.Counter {
+  @include typography.labelStrong;
+
+  min-width: var(--size-border-radius-semantic-border-radius-promo);
+  min-height: var(--size-border-radius-semantic-border-radius-promo);
+  padding: 1px var(--spacing-size-s);
+  border-radius: var(--border-radius-circle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.Counter_variant_primary {
+  @include textColorPrimary;
+  background-color: var(--counter-themed);
+}
+.Counter_variant_primary-contrast {
+  @include withoutBackgroundColor;
+  color: var(--text-themed);
+}
+.Counter_variant_attention {
+  @include textColorPrimary;
+  background-color: var(--counter-attention);
+}
+.Counter_variant_attention-contrast {
+  @include withoutBackgroundColor;
+  color: var(--text-negative);
+}
+.Counter_variant_promo {
+  @include withoutBackgroundColor;
+  color: var(--promo-text-step-1);
+}
+.Counter_variant_static {
+  @include textColorPrimary;
+  background-color: var(--counter-default);
+}
+.Counter_variant_static-contrast {
+  @include withoutBackgroundColor;
+  color: var(--text-primary-static);
+}
+.Counter_variant_default {
+  color: var(--text-primary-inverse);
+  background-color: var(--counter-mirage);
+}
+.Counter_variant_mute {
+  color: var(--text-tertiary);
+  background-color: var(--counter-mute);
+}
+.Counter_variant_menu {
+  @include textColorPrimary;
+  background-color: var(--counter-menu);
+}

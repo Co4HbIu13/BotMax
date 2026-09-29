@@ -1,0 +1,24 @@
+.OverlayContainer {
+  background-size: 40px 40px;
+  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+  display: flex;
+  justify-content: center;
+  width: 100vw;
+  min-height: 100vh;
+  align-items: center;
+
+  &_appearance {
+    &_light {
+      background-image: radial-gradient(circle at 2px 2px, #64646421 2px, transparent 1px);
+      background-size: 25px 25px;
+    }
+
+    &_dark {
+      background-color: #17181c;
+      background-image: radial-gradient(circle at 2px 2px, #64646421 2px, transparent 1px);
+      background-size: 25px 25px;
+    }
+  }
+}
+
+

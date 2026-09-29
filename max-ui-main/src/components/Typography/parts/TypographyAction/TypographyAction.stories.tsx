@@ -1,0 +1,33 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { hideArgsControl, reactNodeTextControl, selectControl } from '@storybook-config/shared';
+
+import { Typography } from '../..';
+import { TypographyAction, type TypographyActionProps } from './TypographyAction';
+
+const meta = {
+  title: 'Components/Typography/Typography.Action',
+  component: TypographyAction,
+  parameters: {
+    cartesian: ['variant']
+  },
+  argTypes: {
+    ...hideArgsControl(['asChild']),
+    variant: selectControl(['large', 'medium', 'small', 'xsmall', 'custom']),
+    children: reactNodeTextControl
+  },
+  args: {
+    children: 'Hello world',
+    variant: 'large'
+  }
+} satisfies Meta<TypographyActionProps>;
+
+export default meta;
+type Story = StoryObj<TypographyActionProps>;
+
+export const Playground: Story = {
+  render: (props) => {
+    return (
+      <Typography.Action {...props} />
+    );
+  }
+};

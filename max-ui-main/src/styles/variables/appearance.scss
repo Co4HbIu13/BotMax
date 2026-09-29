@@ -1,0 +1,235 @@
+@mixin lightPalette {
+  // Background
+  --background-surface: rgb(237 238 242);
+  --background-primary: rgb(255 255 255);
+  --background-secondary: rgb(245 247 250);
+  --background-tertiary: rgb(9 9 9 / 0.05);
+  --background-card: rgb(255 255 255);
+  --background-overlay: rgb(12 13 14 / 0.32);
+  --background-overlay-secondary: rgb(0 0 0 / 0.6);
+
+  // Icon
+  --icon-primary: rgb(6 7 8 / 0.84);
+  --icon-tertiary: rgb(6 7 8 / 0.48);
+  --icon-mute: rgb(6 7 8 / 0.28);
+  --icon-primary-static: rgb(6 7 8 / 0.84);
+  --icon-primary-inverse: rgb(255 255 255);
+  --icon-primary-inverse-static: rgb(255 255 255);
+  --icon-themed: rgb(0 122 255);
+  --icon-positive: rgb(26 190 67);
+  --icon-negative: rgb(255 48 60);
+
+  // Text
+  --text-primary: rgb(6 7 8);
+  --text-secondary: rgb(6 7 8 / 0.68);
+  --text-tertiary: rgb(6 7 8 / 0.52);
+  --text-primary-static: rgb(6 7 8);
+  --text-primary-inverse: rgb(255 255 255);
+  --text-primary-inverse-static: rgb(255 255 255);
+  --text-themed: rgb(0 122 255);
+  --text-negative: rgb(255 48 60);
+
+  // Divider
+  --divider-primary: rgb(12 13 14 / 0.16);
+  --divider-secondary: rgb(12 13 14 / 0.06);
+
+  // Button
+  --button-primary: rgb(0 122 255);
+  --button-secondary: rgb(233 235 241);
+  --button-primary-contrast: rgb(255 255 255);
+  --button-secondary-contrast: rgb(32 54 110 / 0.1);
+  --button-negative: rgb(255 48 60);
+  --button-ghost: rgb(0 0 0 / 0);
+  --button-overlay: rgb(12 13 14 / 0.32);
+
+  // Controls
+  --controls-active: rgb(0 122 255);
+  --controls-inactive: rgb(9 9 9 / 0.08);
+
+  // Promo
+  --promo-text-step-1: rgb(104 19 255);
+
+  // Counter
+  --counter-attention: rgb(255 48 60);
+  --counter-mute: rgb(6 7 8 / 0.12);
+  --counter-themed: rgb(0 122 255);
+  --counter-default: rgb(23 24 28);
+  --counter-mirage: rgb(23 24 28);
+  --counter-contrast: rgb(255 255 255);
+  --counter-menu: rgb(137 140 140);
+
+  // States
+  --states-background-card-disabled: rgb(255 255 255 / 0.4);
+  --states-icon-primary-disabled: rgb(111 114 118 / 0.64);
+  --states-icon-tertiary-hover: rgb(12 13 14 / 0.64);
+  --states-button-primary-hover: rgb(71 159 255);
+  --states-button-primary-pressed: rgb(0 110 229);
+  --states-button-primary-disabled: rgb(0 122 255 / 0.48);
+  --states-button-secondary-hover: rgb(238 239 244);
+  --states-button-secondary-pressed: rgb(223 227 234);
+  --states-button-secondary-disabled: rgb(233 235 241);
+  --states-button-primary-contrast-hover: rgb(246 246 246);
+  --states-button-primary-contrast-pressed: rgb(235 235 235);
+  --states-button-primary-contrast-disabled: rgb(255 255 255 / 0.4);
+  --states-button-secondary-contrast-hover: rgb(32 54 110 / 0.08);
+  --states-button-secondary-contrast-pressed: rgb(32 54 110 / 0.12);
+  --states-button-secondary-contrast-disabled: rgb(32 54 110 / 0.1);
+  --states-button-negative-hover: rgb(255 75 85);
+  --states-button-negative-pressed: rgb(240 55 65);
+  --states-button-negative-disabled: rgb(247 96 105 / 0.48);
+  --states-button-ghost-hover: rgb(13 13 13 / 0.04);
+  --states-button-ghost-pressed: rgb(13 13 13 / 0.08);
+  --states-button-overlay-hover: rgb(12 13 14 / 0.48);
+  --states-button-overlay-pressed: rgb(12 13 14 / 0.56);
+  --states-button-overlay-disabled: rgb(12 13 14 / 0.2);
+  --states-text-primary-disabled: rgb(111 114 118 / 0.64);
+  --states-text-secondary-disabled: rgb(111 114 118 / 0.64);
+  --states-text-tertiary-disabled: rgb(111 114 118 / 0.64);
+  --states-text-primary-static-disabled: rgb(111 114 118 / 0.64);
+  --states-text-primary-inverse-static-disabled: rgb(255 255 255 / 0.72);
+  --states-text-themed-disabled: rgb(0 122 255 / 0.6);
+  --states-text-negative-disabled: rgb(229 77 86 / 0.64);
+  --states-controls-active-disabled: rgb(0 122 255 / 0.48);
+  --states-controls-inactive-disabled: rgb(9 9 9 / 0.04);
+  --states-counter-contrast-disabled: rgb(255 255 255 / 0.4);
+  --states-counter-default-disabled: rgb(135 137 143);
+  --background-accent-neutral-fade-secondary: rgb(9 9 9 / 0.05);
+  --gradients-loading-icon-contrast-filled: rgb(255 255 255);
+  --gradients-loading-icon-contrast-transparent: rgb(255 255 255 / 0);
+  --gradients-loading-icon-contrast-static-filled: rgb(255 255 255);
+  --gradients-loading-icon-contrast-static-transparent: rgb(255 255 255 / 0);
+  --gradients-loading-icon-negative-filled: rgb(255 48 60);
+  --gradients-loading-icon-negative-transparent: rgb(255 48 60 / 0);
+  --gradients-loading-icon-neutral-themed-filled: rgb(13 13 13);
+  --gradients-loading-icon-neutral-themed-transparent: rgb(13 13 13 / 0);
+  --gradients-loading-icon-primary-filled: rgb(6 7 8 / 0.84);
+  --gradients-loading-icon-primary-transparent: rgb(6 7 8 / 0);
+  --gradients-loading-icon-primary-static-filled: rgb(6 7 8 / 0.84);
+  --gradients-loading-icon-primary-static-transparent: rgb(6 7 8 / 0);
+  --gradients-loading-icon-themed-filled: rgb(0 122 255);
+  --gradients-loading-icon-themed-transparent: rgb(0 122 255 / 0);
+    // Устаревшие токены maxUI, для которых не найдено подтверждённого аналога в Color.General.
+  --icon-quaternary: rgb(188 189 190);
+  --states-background-hovered-transparent: rgb(13 13 13 / 0.04);
+  --states-background-pressed-transparent: rgb(13 13 13 / 0.08);
+  --states-background-disabled-neutral-fade: rgb(9 9 9 / 0.04);
+}
+
+@mixin darkPalette {
+  // Background
+  --background-surface: rgb(15 15 18);
+  --background-primary: rgb(23 24 28);
+  --background-secondary: rgb(37 38 45);
+  --background-tertiary: rgb(255 255 255 / 0.09);
+  --background-card: rgb(37 38 45);
+  --background-overlay: rgb(13 13 13 / 0.64);
+  --background-overlay-secondary: rgb(0 0 0 / 0.6);
+
+  // Icon
+  --icon-primary: rgb(255 255 255);
+  --icon-tertiary: rgb(255 255 255 / 0.52);
+  --icon-mute: rgb(255 255 255 / 0.36);
+  --icon-primary-static: rgb(6 7 8 / 0.84);
+  --icon-primary-inverse: rgb(6 7 8 / 0.84);
+  --icon-primary-inverse-static: rgb(255 255 255);
+  --icon-themed: rgb(0 122 255);
+  --icon-positive: rgb(43 198 68);
+  --icon-negative: rgb(206 66 87);
+
+  // Text
+  --text-primary: rgb(255 255 255);
+  --text-secondary: rgb(255 255 255 / 0.8);
+  --text-tertiary: rgb(255 255 255 / 0.64);
+  --text-primary-static: rgb(6 7 8);
+  --text-primary-inverse: rgb(6 7 8);
+  --text-primary-inverse-static: rgb(255 255 255);
+  --text-themed: rgb(0 122 255);
+  --text-negative: rgb(206 66 87);
+
+  // Divider
+  --divider-primary: rgb(255 255 255 / 0.12);
+  --divider-secondary: rgb(255 255 255 / 0.06);
+
+  // Button
+  --button-primary: rgb(0 122 255);
+  --button-secondary: rgb(67 68 85);
+  --button-primary-contrast: rgb(255 255 255);
+  --button-secondary-contrast: rgb(191 194 246 / 0.26);
+  --button-negative: rgb(206 66 87);
+  --button-ghost: rgb(0 0 0 / 0);
+  --button-overlay: rgb(46 51 56 / 0.45);
+
+  // Controls
+  --controls-active: rgb(0 122 255);
+  --controls-inactive: rgb(255 255 255 / 0.09);
+
+  // Promo
+  --promo-text-step-1: rgb(164 115 255);
+
+  // Counter
+  --counter-attention: rgb(206 66 87);
+  --counter-mute: rgb(255 255 255 / 0.28);
+  --counter-themed: rgb(0 122 255);
+  --counter-default: rgb(23 24 28);
+  --counter-mirage: rgb(255 255 255);
+  --counter-contrast: rgb(255 255 255);
+  --counter-menu: rgb(121 124 124);
+
+  // States
+  --states-background-card-disabled: rgb(30 30 30 / 0.4);
+  --states-icon-primary-disabled: rgb(255 255 255 / 0.24);
+  --states-icon-tertiary-hover: rgb(231 231 231 / 0.64);
+  --states-button-primary-hover: rgb(71 159 255);
+  --states-button-primary-pressed: rgb(0 110 229);
+  --states-button-primary-disabled: rgb(255 255 255 / 0.12);
+  --states-button-secondary-hover: rgb(77 78 98);
+  --states-button-secondary-pressed: rgb(60 62 76);
+  --states-button-secondary-disabled: rgb(75 76 94);
+  --states-button-primary-contrast-hover: rgb(246 246 246);
+  --states-button-primary-contrast-pressed: rgb(235 235 235);
+  --states-button-primary-contrast-disabled: rgb(255 255 255 / 0.12);
+  --states-button-secondary-contrast-hover: rgb(191 194 246 / 0.32);
+  --states-button-secondary-contrast-pressed: rgb(191 194 246 / 0.22);
+  --states-button-secondary-contrast-disabled: rgb(191 194 246 / 0.26);
+  --states-button-negative-hover: rgb(245 78 103);
+  --states-button-negative-pressed: rgb(156 50 66);
+  --states-button-negative-disabled: rgb(255 255 255 / 0.12);
+  --states-button-ghost-hover: rgb(231 231 231 / 0.04);
+  --states-button-ghost-pressed: rgb(231 231 231 / 0.08);
+  --states-button-overlay-hover: rgb(46 51 56 / 0.64);
+  --states-button-overlay-pressed: rgb(46 51 56 / 0.72);
+  --states-button-overlay-disabled: rgb(13 13 13 / 0.32);
+  --states-text-primary-disabled: rgb(255 255 255 / 0.28);
+  --states-text-secondary-disabled: rgb(255 255 255 / 0.28);
+  --states-text-tertiary-disabled: rgb(255 255 255 / 0.28);
+  --states-text-primary-static-disabled: rgb(255 255 255 / 0.28);
+  --states-text-primary-inverse-static-disabled: rgb(255 255 255 / 0.28);
+  --states-text-themed-disabled: rgb(255 255 255 / 0.28);
+  --states-text-negative-disabled: rgb(255 255 255 / 0.28);
+  --states-controls-active-disabled: rgb(255 255 255 / 0.12);
+  --states-controls-inactive-disabled: rgb(255 255 255 / 0.12);
+  --states-counter-contrast-disabled: rgb(255 255 255 / 0.12);
+  --states-counter-default-disabled: rgb(255 255 255 / 0.12);
+
+  // Устаревшие токены maxUI, для которых не найдено подтверждённого аналога в Color.General.
+  --background-accent-neutral-fade-secondary: rgb(255 255 255 / 0.09);
+  --gradients-loading-icon-contrast-filled: rgb(6 7 8 / 0.84);
+  --gradients-loading-icon-contrast-transparent: rgb(6 7 8 / 0);
+  --gradients-loading-icon-contrast-static-filled: rgb(255 255 255);
+  --gradients-loading-icon-contrast-static-transparent: rgb(255 255 255 / 0);
+  --gradients-loading-icon-negative-filled: rgb(206 66 87);
+  --gradients-loading-icon-negative-transparent: rgb(206 66 87 / 0);
+  --gradients-loading-icon-neutral-themed-filled: rgb(0 122 255);
+  --gradients-loading-icon-neutral-themed-transparent: rgb(0 122 255 / 0);
+  --gradients-loading-icon-primary-filled: rgb(255 255 255);
+  --gradients-loading-icon-primary-transparent: rgb(255 255 255 / 0);
+  --gradients-loading-icon-primary-static-filled: rgb(6 7 8 / 0.84);
+  --gradients-loading-icon-primary-static-transparent: rgb(6 7 8 / 0);
+  --gradients-loading-icon-themed-filled: rgb(0 122 255);
+  --gradients-loading-icon-themed-transparent: rgb(0 122 255 / 0);
+    // Устаревшие токены maxUI, для которых не найдено подтверждённого аналога в Color.General.
+  --icon-quaternary: rgb(255 255 255 / 0.28);
+  --states-background-hovered-transparent: rgb(231 231 231 / 0.04);
+  --states-background-pressed-transparent: rgb(231 231 231 / 0.08);
+  --states-background-disabled-neutral-fade: rgb(255 255 255 / 0.12);
+}

@@ -1,0 +1,126 @@
+@use '../../styles/shared-mixins/typography';
+
+.CellSimple {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// [State] Disabled
+.CellSimple_disabled {
+  color: var(--states-text-primary-disabled);
+
+  .CellSimple__title {
+    color: var(--states-text-primary-disabled);
+  }
+
+  .CellSimple__overline {
+    color: var(--states-text-tertiary-disabled);
+  }
+
+  .CellSimple__link {
+    color: var(--states-text-themed-disabled);
+  }
+
+  &.CellSimple_subtitle_secondary .CellSimple__subtitle {
+    color: var(--states-text-secondary-disabled);
+  }
+
+  &.CellSimple_subtitle_tertiary .CellSimple__subtitle {
+    color: var(--states-text-tertiary-disabled);
+  }
+}
+
+// [Properties] Heights
+.CellSimple_height_compact {
+  padding: var(--spacing-size-xs) var(--spacing-size-xl);
+  min-height: 48px;
+}
+.CellSimple_height_normal {
+  padding: var(--spacing-size-m) var(--spacing-size-xl);
+  min-height: 56px;
+}
+
+// [Properties] Surfaces
+.CellSimple_surface_island {
+  border-radius: var(--r-1652);
+  background-color: var(--background-card);
+}
+
+// [Parts] Before
+.CellSimple__before {
+  margin-right: var(--spacing-size-xl);
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// [Parts] After
+.CellSimple__after {
+  margin-left: var(--spacing-size-xl);
+  display: flex;
+  align-items: center;
+}
+
+// [Parts] Content
+.CellSimple__content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+  gap: var(--spacing-size-xs);
+}
+
+// [Parts] Title
+.CellSimple__title {
+  @include typography.bodyStrong;
+
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+// [Parts] Chevron
+.CellSimple__chevron {
+  color: var(--icon-mute);
+  flex-shrink: 0;
+}
+
+// [Parts] Subtitle
+.CellSimple__subtitle {
+  @include typography.description;
+}
+
+.CellSimple_subtitle_secondary .CellSimple__subtitle {
+  color: var(--text-secondary);
+}
+
+.CellSimple_subtitle_tertiary .CellSimple__subtitle {
+  color: var(--text-tertiary);
+}
+
+// [Parts] Overline
+.CellSimple__overline {
+  @include typography.description;
+
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.CellSimple_separator {
+  border-top: 0.5px solid var(--divider-primary);
+}
+.CellSimple__link {
+  color: var(--text-themed);
+  text-decoration: none;
+  @include typography.description;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}

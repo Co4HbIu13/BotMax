@@ -1,0 +1,113 @@
+@use '../../styles/shared-mixins/button-sizes';
+@use '../../styles/shared-mixins/button-variants';
+@use '../../styles/shared-mixins/typography';
+@use '../../styles/shared-mixins/reset-clickable';
+
+.IconButton {
+  @include reset-clickable.resetClickable;
+
+  background-color: var(--MaxUi-IconButton_background);
+  color: var(--MaxUi-IconButton_foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: var(--border-radius-circle);
+}
+
+// [State] Loading
+.IconButton_loading {
+
+  .IconButton__content {
+    visibility: hidden;
+  }
+}
+
+// [State] Disabled
+.IconButton_disabled {
+  cursor: not-allowed;
+}
+
+// [Property] Effect on :active
+.IconButton_activeMode {
+
+  &_ripple {
+    --Ripple_backgroundColor: var(--MaxUi-IconButton_background-active);
+  }
+
+  &_highlight {
+
+    &:active {
+      background-color: var(--MaxUi-IconButton_background-active);
+      color: var(--MaxUi-IconButton_foreground-active, var(--MaxUi-IconButton_foreground));
+    }
+  }
+}
+
+// [Properties] Sizes
+.IconButton_size_xsmall {
+  @include button-sizes.iconButtonXSmallSize;
+}
+.IconButton_size_small {
+  @include button-sizes.iconButtonSmallSize;
+}
+.IconButton_size_medium {
+  @include button-sizes.iconButtonMediumSize;
+}
+.IconButton_size_large {
+  @include button-sizes.iconButtonLargeSize;
+}
+
+// [Properties] Variants
+.IconButton_variant_primary {
+  @include button-variants.buttonVariantPrimary('IconButton');
+}
+
+.IconButton_variant_secondary {
+  @include button-variants.buttonVariantSecondary('IconButton');
+}
+
+.IconButton_variant_ghost {
+  @include button-variants.buttonVariantGhost('IconButton');
+}
+
+.IconButton_variant_primary-contrast {
+  @include button-variants.buttonVariantPrimaryContrast('IconButton');
+}
+
+.IconButton_variant_secondary-contrast {
+  @include button-variants.buttonVariantSecondaryContrast('IconButton');
+}
+
+.IconButton_variant_overlay {
+  @include button-variants.buttonVariantOverlay('IconButton');
+}
+
+.IconButton_variant_destructive {
+  @include button-variants.buttonVariantDestructive('IconButton');
+}
+
+// [Parts] Spinner container
+.IconButton__spinnerContainer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// [Parts] Content
+.IconButton__content {
+  position: relative;
+  z-index: 2;
+  line-height: 0;
+}
+
+// [Parts] Ripple
+.IconButton__ripple {
+  position: absolute;
+  inset: 0;
+}

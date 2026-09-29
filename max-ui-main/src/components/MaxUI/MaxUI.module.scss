@@ -1,0 +1,44 @@
+@use '../../styles/variables/common';
+@use '../../styles/variables/sizes';
+@use '../../styles/variables/appearance';
+@use '../../styles/variables/typography';
+
+.MaxUI {
+  @include common.commonVariables;
+
+  font-family: var(--family-base);
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  width: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  &_platform {
+
+    &_ios {
+      @include sizes.iosSizes;
+      @include typography.iosTypography;
+    }
+
+    &_android {
+      @include sizes.androidSizes;
+      @include typography.androidTypography;
+    }
+  }
+
+  &_colorScheme {
+
+    &_light {
+      @include appearance.lightPalette;
+    }
+
+    &_dark {
+      @include appearance.darkPalette;
+    }
+  }
+}
+
+:global(body).MaxUI_resetBody {
+  margin: 0;
+}

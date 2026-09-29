@@ -1,0 +1,66 @@
+@use '../../styles/shared-mixins/typography';
+@use '../../styles/shared-mixins/reset-text-field';
+
+.CellInput {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+// [State] Disabled
+.CellInput_disabled {
+  color: var(--states-text-primary-disabled);
+
+  .CellInput__input {
+
+    &::placeholder {
+      color: var(--states-text-tertiary-disabled);
+    }
+  }
+}
+
+// [Properties] Heights
+.CellInput_height_compact {
+  padding: var(--spacing-size-xs) var(--spacing-size-xl);
+  min-height: 48px;
+}
+.CellInput_height_normal {
+  padding: var(--spacing-size-m) var(--spacing-size-xl);
+  min-height: 56px;
+}
+
+// [Properties] Surfaces
+.CellInput_surface_island {
+  border-radius: var(--r-1652);
+  background-color: var(--background-card);
+}
+
+// [Parts]
+.CellInput__before {
+  @include typography.bodyStrong;
+
+  margin-right: var(--spacing-size-xs);
+  width: 96px;
+}
+
+// [Parts] Body
+.CellInput__body {
+  flex-grow: 1;
+}
+
+// [Parts] Input
+.CellInput__input {
+  @include reset-text-field.resetTextField;
+  @include typography.body;
+
+  flex-grow: 1;
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+}
+
+// [Parts] Input Clear Button
+.CellInput__clearButton {
+  margin-left: var(--spacing-size-xl);
+}

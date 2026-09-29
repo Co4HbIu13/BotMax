@@ -1,0 +1,207 @@
+@use '../../styles/shared-mixins/button-sizes';
+@use '../../styles/shared-mixins/button-variants';
+@use '../../styles/shared-mixins/typography';
+
+.Button {
+  font-family: var(--family-base);
+  background-color: var(--MaxUi-Button_background);
+  color: var(--MaxUi-Button_foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 0;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// [State] Loading
+.Button_loading {
+  cursor: wait;
+
+  :where(.Button__iconBefore, .Button__content, .Button__indicator, .Button__iconAfter) {
+    visibility: hidden;
+  }
+}
+
+// [State] Disabled
+.Button_disabled {
+  cursor: not-allowed;
+}
+
+// [State] Stretched
+.Button_stretched {
+  width: 100%;
+}
+
+// [Property] Effect on :active
+.Button_activeMode {
+
+  &_ripple {
+    --Ripple_backgroundColor: var(--MaxUi-Button_background-active);
+  }
+
+  &_highlight {
+
+    &:active {
+      background-color: var(--MaxUi-Button_background-active);
+      color: var(--MaxUi-Button_foreground-active, var(--MaxUi-Button_foreground));
+    }
+  }
+}
+
+// [Properties] Sizes and spacings
+.Button_size_xsmall {
+  @include button-sizes.buttonXSmallSize;
+}
+.Button_size_small {
+  @include button-sizes.buttonSmallSize;
+}
+.Button_size_medium {
+  @include button-sizes.buttonMediumSize;
+}
+.Button_size_large {
+  @include button-sizes.buttonLargeSize;
+}
+
+// [Properties] Variants
+.Button_variant_primary {
+  @include button-variants.buttonVariantPrimary('Button');
+}
+
+.Button_variant_secondary {
+  @include button-variants.buttonVariantSecondary('Button');
+}
+
+.Button_variant_ghost {
+  @include button-variants.buttonVariantGhost('Button');
+}
+
+.Button_variant_primary-contrast {
+  @include button-variants.buttonVariantPrimaryContrast('Button');
+}
+
+.Button_variant_secondary-contrast {
+  @include button-variants.buttonVariantSecondaryContrast('Button');
+}
+
+.Button_variant_overlay {
+  @include button-variants.buttonVariantOverlay('Button');
+}
+
+.Button_variant_destructive {
+  @include button-variants.buttonVariantDestructive('Button');
+}
+
+// [Parts] Content
+.Button__content {
+  position: relative;
+  z-index: 1;
+
+  :where(.Button_size_xsmall) & {
+    @include typography.actionSmall;
+  }
+
+  :where(.Button_size_small) & {
+    @include typography.actionMedium;
+  }
+
+  :where(.Button_size_medium) & {
+    @include typography.actionLarge;
+
+    font-weight: 500;
+  }
+
+  :where(.Button_size_large) & {
+    @include typography.actionLarge;
+
+    font-weight: 500;
+  }
+}
+
+// [Parts] Spinner container
+.Button__spinnerContainer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// [Parts] Icon before
+.Button__iconBefore {
+  position: relative;
+  z-index: 1;
+  display: flex;
+
+  :where(.Button_size_xsmall) & {
+    margin-right: var(--spacing-size-xs);
+  }
+
+  :where(.Button_size_small) & {
+    margin-right: var(--spacing-size-xs);
+  }
+
+  :where(.Button_size_medium) & {
+    margin-right: var(--spacing-size-m);
+  }
+
+  :where(.Button_size_large) & {
+    margin-right: var(--spacing-size-m);
+  }
+}
+
+// [Parts] Icon after
+.Button__iconAfter {
+  position: relative;
+  z-index: 1;
+  display: flex;
+
+  :where(.Button_size_xsmall) & {
+    margin-left: var(--spacing-size-xs);
+  }
+
+  :where(.Button_size_small) & {
+    margin-left: var(--spacing-size-xs);
+  }
+
+  :where(.Button_size_medium) & {
+    margin-left: var(--spacing-size-s);
+  }
+
+  :where(.Button_size_large) & {
+    margin-left: var(--spacing-size-s);
+  }
+}
+
+// [Parts] Indicator
+.Button__indicator {
+  position: relative;
+  z-index: 1;
+
+  :where(.Button_size_xsmall) & {
+    margin-left: var(--spacing-size-xs);
+  }
+
+  :where(.Button_size_small) & {
+    margin-left: var(--spacing-size-xs);
+  }
+
+  :where(.Button_size_medium) & {
+    margin-left: var(--spacing-size-m);
+  }
+
+  :where(.Button_size_large) & {
+    margin-left: var(--spacing-size-m);
+  }
+}
+
+// [Parts] Ripple
+.Button__ripple {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}

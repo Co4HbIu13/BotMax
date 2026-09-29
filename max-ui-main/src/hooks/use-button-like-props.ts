@@ -1,0 +1,62 @@
+import {
+  type ComponentProps, type ElementType,
+  isValidElement,
+  type MouseEventHandler,
+  type PropsWithChildren,
+  type ReactNode
+} from 'react';
+
+export interface ButtonLikeProps {
+  asChild?: boolean
+  children?: ReactNode
+  disabled?: boolean
+  loading?: boolean
+  onClick?: MouseEventHandler<any>
+  rootElement?: ElementType
+}
+
+// Хук useButtonLikeProps используется в полиморфных компонентах-кнопках (FatherComponent с asChild пропом): Button, Cell, CellAction, etc
+// Главная задача хука - собрать объект с валидными аттрибутами компонента, в зависимости от рутового элемента
+export const useButtonLikeProps = (props: ButtonLikeProps): ComponentProps<any> => {
+  const { asChild, children, rootElement, disabled, loading, onClick } = props;
+  const inactive = Boolean(disabled || loading);
+  const clickHandler: MouseEventHandler<any> | undefined = inactive
+    ? (event) => { event.preventDefault(); }
+    : onClick;
+
+  if (!asChild && rootElement === 'button') {
+    const buttonProps: ComponentProps<'button'> = {
+      disabled: inactive,
+      onClick: clickHandler,
+      ...(loading ? { 'aria-busy': true, 'aria-disabled': true } : {})
+    };
+    return buttonProps;
+  }
+
+  // Если компонент использует проп asChild, то нужно определить тип children элемента и вернуть нужные аттрибуты
+  if (asChild && isValidElement<PropsWithChildren>(children)) {
+    const { type } = children;
+
+    // Если это ссылка (тег a), то нужно добавить aria-disabled, запревентить открытие ссылки и убрать фокус, если компонент disabled
+    if (type === 'a') {
+      const anchorProps: ComponentProps<'a'> = {
+        'aria-disabled': inactive,
+        onClick: clickHandler,
+        ...(loading ? { 'aria-busy': true } : {}),
+        ...(disabled ? { tabIndex: -1 } : {})
+      };
+
+      return anchorProps;
+    }
+  }
+
+  // Если компонент не button и не a, то в качестве фоллбека используем пропы для div
+  const divProps: ComponentProps<'div'> = {
+    role: 'button',
+    tabIndex: disabled ? -1 : 0,
+    'aria-disabled': inactive,
+    onClick: clickHandler,
+    ...(loading ? { 'aria-busy': true } : {})
+  };
+  return divProps;
+};

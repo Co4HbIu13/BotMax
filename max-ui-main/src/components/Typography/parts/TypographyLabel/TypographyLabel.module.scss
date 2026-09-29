@@ -1,0 +1,23 @@
+@use '../../../../styles/shared-mixins/typography';
+
+.TypographyLabel {}
+
+// [Properties] Variants
+.TypographyLabel_variant_large {
+  @include typography.label;
+}
+.TypographyLabel_variant_large-strong {
+  @include typography.labelStrong;
+}
+.TypographyLabel_variant_medium {
+  @include typography.tag;
+}
+.TypographyLabel_variant_medium-strong {
+  @include typography.tagStrong;
+}
+.TypographyLabel_variant_small {
+  @include typography.note;
+}
+.TypographyLabel_variant_small-strong {
+  @include typography.noteStrong;
+}

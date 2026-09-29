@@ -1,0 +1,26 @@
+@mixin buildButtonFilledVariant(
+  $root,
+
+  $background,
+  $background_disabled,
+  $background_hovered,
+  $background_pressed,
+  $foreground,
+  $foreground_disabled,
+) {
+  --MaxUi-#{$root}_background-active: #{$background_pressed};
+
+  --MaxUi-#{$root}_background: #{$background};
+  --MaxUi-#{$root}_foreground: #{$foreground};
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      --MaxUi-#{$root}_background: #{$background_hovered};
+    }
+  }
+
+  &.#{$root}_disabled {
+    --MaxUi-#{$root}_background: #{$background_disabled};
+    --MaxUi-#{$root}_foreground: #{$foreground_disabled};
+  }
+}

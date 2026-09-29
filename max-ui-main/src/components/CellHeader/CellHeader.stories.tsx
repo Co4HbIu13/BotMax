@@ -1,0 +1,72 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import Icon16Placeholder from '@storybook-config/assets/icons/icon-16-placeholder.svg';
+import { hideArgsControl, optionalControl, reactNodeTextControl, resolveOptionalControl, selectControl } from '@storybook-config/shared';
+
+import { Avatar } from '../Avatar';
+import { CellList } from '../CellList';
+import { CellSimple } from '../CellSimple';
+import { Typography } from '../Typography';
+import { CellHeader, type CellHeaderProps } from './CellHeader';
+
+const afterOptions = {
+  Text: <Typography.Action key="text" variant="small">Действие</Typography.Action>,
+  Icon: <Icon16Placeholder key="icon" />
+};
+
+const meta = {
+  title: 'Components/Cell/CellHeader',
+  component: CellHeader,
+  parameters: {
+    cartesian: ['titleStyle']
+  },
+  argTypes: {
+    ...hideArgsControl(['innerClassNames']),
+
+    titleStyle: selectControl(['caps', 'normal']),
+    children: reactNodeTextControl,
+    after: optionalControl(afterOptions)
+  },
+  args: {
+    children: 'Пользователь',
+    titleStyle: 'caps',
+    fullWidth: false,
+    after: 'None'
+  },
+  decorators: [
+    (Story, context) => (
+      <div style={{ width: 375 }}>
+        <Story
+          args={{
+            ...context.args,
+            after: resolveOptionalControl(afterOptions, context.args.after)
+          }}
+        />
+      </div>
+    )
+  ]
+} satisfies Meta<CellHeaderProps>;
+
+export default meta;
+type Story = StoryObj<CellHeaderProps>;
+
+export const Playground: Story = {
+  render: ({ ...args }) => {
+    return (
+      <CellList
+        header={<CellHeader {...args} />}
+        mode="island"
+      >
+        <CellSimple
+          title="Vadim Tregubenko"
+          before={(
+            <Avatar.Container size={40}>
+              <Avatar.Image src="https://sun9-67.userapi.com/s/v1/ig2/CY_xDesKnMtl0OiJynK0oc7QnxQVJUgeciJSi_MpZUiE3EHSCNltr76jugXaygGd2Xh0M8-61v7Jwfl1kO87YWVe.jpg?quality=95&crop=0,0,1440,1440&as=32x32,48x48,72x72,108x108,160x160,240x240,360x360,480x480,540x540,640x640,720x720,1080x1080,1280x1280,1440x1440&ava=1&u=SpmuDKJYdLKKRYYDgjLVQdEn6QnBonR3kSYxCSkCnm4&cs=200x200" />
+            </Avatar.Container>
+          )}
+          showChevron
+          onClick={() => {}}
+        />
+      </CellList>
+    );
+  }
+};

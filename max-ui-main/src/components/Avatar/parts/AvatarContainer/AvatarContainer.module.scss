@@ -1,0 +1,110 @@
+@use '../../../../styles/shared-mixins/reset-clickable';
+
+$squircleMaskUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI1NiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTI4IDBDNC45NDIgMCAwIDQuOTQyIDAgMjhjMCAyMy4wNDYgNC45MzcgMjcuOTk1IDI3Ljk2NSAyOGguMDdjMjMuMDE2LS4wMDUgMjcuOTYtNC45NDkgMjcuOTY1LTI3Ljk2NXYtLjA3QzU1Ljk5NSA0LjkzNyA1MS4wNDYgMCAyOCAwIi8+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTAgMjhDMCA0Ljk0MiA0Ljk0MiAwIDI4IDBzMjggNC45NDIgMjggMjgtNC45NDIgMjgtMjggMjhTMCA1MS4wNTggMCAyOCIvPjwvc3ZnPg==';
+
+.AvatarContainer {
+  @include reset-clickable.resetClickable;
+
+  width: var(--MaxUi-AvatarContainer_size);
+  height: var(--MaxUi-AvatarContainer_size);
+  position: relative;
+  display: block;
+  max-width: 200px;
+  max-height: 200px;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+// [Properties] Forms
+.AvatarContainer_form_circle .AvatarContainer__content {
+  --MaxUi-AvatarContainer__content_radius: var(--border-radius-circle);
+
+  border-radius: var(--MaxUi-AvatarContainer__content_radius);
+}
+.AvatarContainer_form_squircle .AvatarContainer__content {
+  mask-image: url($squircleMaskUrl);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+// [Parts] Content
+.AvatarContainer__content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.AvatarContainer_form_circle .AvatarContainer__content::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 0.5px solid var(--divider-secondary);
+  border-radius: inherit;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+// [Properties] Online status
+.AvatarContainer__onlineStatus {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  border-radius: var(--border-radius-circle);
+  background-color: var(--icon-positive);
+  box-shadow: 0 0 0 var(--MaxUi-AvatarContainer__onlineStatus_stroke-width, 2px) var(--background-primary);
+  pointer-events: none;
+}
+
+.AvatarContainer_onlineStatus_xs .AvatarContainer__onlineStatus {
+  width: 6px;
+  height: 6px;
+  right: 1px;
+  bottom: 1px;
+}
+
+.AvatarContainer_onlineStatus_s .AvatarContainer__onlineStatus {
+  width: 8px;
+  height: 8px;
+  right: 2px;
+  bottom: 2px;
+}
+
+.AvatarContainer_onlineStatus_m .AvatarContainer__onlineStatus {
+  width: 10px;
+  height: 10px;
+  right: 3px;
+  bottom: 3px;
+}
+
+.AvatarContainer_onlineStatus_l .AvatarContainer__onlineStatus {
+  --MaxUi-AvatarContainer__onlineStatus_stroke-width: 3px;
+
+  width: 12px;
+  height: 12px;
+  right: 4px;
+  bottom: 4px;
+}
+
+// [Parts] Overlay
+.AvatarContainer__overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+// [Parts] Right bottom node
+.AvatarContainer__rightBottomCorner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+// [Parts] Right top node
+.AvatarContainer__rightTopCorner {
+  position: absolute;
+  right: 0;
+  top: 0;
+}

@@ -1,0 +1,85 @@
+import { Slottable } from '@radix-ui/react-slot';
+import { clsx } from 'clsx';
+import { type ComponentProps, forwardRef, type ReactNode } from 'react';
+
+import { getSubtree, hasReactNode } from '../../helpers';
+import { Icon16Chevron } from '../../icons';
+import { Tappable } from '../../internal';
+import { type AsChildProp, type InnerClassNamesProp, type MergeProps } from '../../types';
+import styles from './CellAction.module.scss';
+
+export type CellActionMode = 'primary' | 'secondary' | 'themed' | 'destructive' | 'custom';
+export type CellActionSurface = 'default' | 'island';
+export type CellActionHeight = 'compact' | 'normal';
+export type CellActionInnerElementKey = 'before' | 'chevron' | 'content';
+
+interface CellActionOwnProps extends AsChildProp {
+  mode?: CellActionMode
+  surface?: CellActionSurface
+  height?: CellActionHeight
+  before?: ReactNode
+  showChevron?: boolean
+  innerClassNames?: InnerClassNamesProp<CellActionInnerElementKey>
+}
+
+export type CellActionProps = MergeProps<ComponentProps<'button'>, CellActionOwnProps>;
+
+export const CellAction = forwardRef<HTMLButtonElement, CellActionProps>((props, forwardedRef) => {
+  const {
+    className,
+    before,
+    children,
+    innerClassNames,
+    asChild = false,
+    mode = 'primary',
+    surface = 'default',
+    height = 'normal',
+    showChevron = false,
+    ...rest
+  } = props;
+
+  const rootClassName = clsx(
+    styles.CellAction,
+    styles[`CellAction_mode_${mode}`],
+    styles[`CellAction_height_${height}`],
+    {
+      [styles.CellAction_surface_island]: surface === 'island',
+      [styles.CellAction_disabled]: rest.disabled
+    },
+    className
+  );
+
+  return (
+    <Tappable
+      ref={forwardedRef}
+      className={rootClassName}
+      asChild={asChild}
+      as="button"
+      parentChildren={children}
+      {...rest}
+    >
+      {hasReactNode(before) && (
+        <span className={clsx(styles.CellAction__before, innerClassNames?.before)}>
+          {before}
+        </span>
+      )}
+
+      <Slottable>
+        {getSubtree({
+          options: { asChild, children },
+          content: (children) => (
+            <span key="subtree-container" className={clsx(styles.CellAction__content, innerClassNames?.content)}>
+              {children}
+            </span>
+          )
+        })}
+      </Slottable>
+
+      {showChevron && (
+        <Icon16Chevron className={clsx(styles.CellAction__chevron, innerClassNames?.chevron)} />
+      )}
+    </Tappable>
+  );
+});
+
+CellAction.displayName = 'CellAction';
