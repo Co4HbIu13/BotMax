@@ -2,7 +2,7 @@
 
 import random
 import logging
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 from datetime import datetime, timedelta
 
 from ..storage.database import Database
