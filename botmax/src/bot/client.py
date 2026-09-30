@@ -323,34 +323,23 @@ class MAXBotClient:
         self, chat_id: int, raffle_title: str
     ) -> None:
         """Send message with inline keyboard for ticket purchase"""
-        from maxapi.types import InlineKeyboardButton, InlineKeyboardMarkup
+        from maxapi.types import CallbackButton
+        from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
 
         # Create buttons for different ticket quantities
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="🎫 1 билет", callback_data=f"buy_tickets:{raffle_id}:1"
-                    ),
-                    InlineKeyboardButton(
-                        text="🎫🎫 2 билета", callback_data=f"buy_tickets:{raffle_id}:2"
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="🎫🎫🎫 3 билета", callback_data=f"buy_tickets:{raffle_id}:3"
-                    ),
-                    InlineKeyboardButton(
-                        text="🎫×5 5 билетов", callback_data=f"buy_tickets:{raffle_id}:5"
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="🎫×10 10 билетов", callback_data=f"buy_tickets:{raffle_id}:10"
-                    ),
-                ],
-            ]
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            CallbackButton(text="🎫 1 билет", payload=f"buy_tickets:{raffle_id}:1"),
+            CallbackButton(text="🎫🎫 2 билета", payload=f"buy_tickets:{raffle_id}:2"),
         )
+        builder.row(
+            CallbackButton(text="🎫🎫🎫 3 билета", payload=f"buy_tickets:{raffle_id}:3"),
+            CallbackButton(text="🎫×5 5 билетов", payload=f"buy_tickets:{raffle_id}:5"),
+        )
+        builder.row(
+            CallbackButton(text="🎫×10 10 билетов", payload=f"buy_tickets:{raffle_id}:10"),
+        )
+        keyboard = builder.as_markup()
 
         await self.bot.send_message(
             chat_id=chat_id,

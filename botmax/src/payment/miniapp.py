@@ -1,8 +1,10 @@
 """Payment processing via SBP mini-app"""
 
 import logging
+from datetime import datetime
 from typing import Optional, Dict, Any
-from maxapi.types import InlineKeyboardButton, InlineKeyboardMarkup
+from maxapi.types import LinkButton
+from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
 
 from ..config import Config
 from ..logger import get_logger
@@ -73,25 +75,16 @@ class PaymentProcessor:
         raffle_id: str,
         ticket_count: int,
         amount: float,
-    ) -> InlineKeyboardMarkup:
+    ) -> Any:
         """Create inline keyboard with payment button"""
-        # In a real implementation, the mini-app URL would be generated dynamically
-        # For demo purposes, we'll use a placeholder
-
-        payment_button = InlineKeyboardButton(
-            text=f"💳 Оплатить {amount:.2f} Руб (SBP)",
-            url=f"https://pay.example.com?raffle={raffle_id}&tickets={ticket_count}&amount={amount}",
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            LinkButton(
+                text=f"💳 Оплатить {amount:.2f} Руб (SBP)",
+                url=f"https://pay.example.com?raffle={raffle_id}&tickets={ticket_count}&amount={amount}",
+            )
         )
-
-        # Alternative: use open_app button if you have a registered mini-app
-        # open_app_button = InlineKeyboardButton(
-        #     text=f"💳 Оплатить {amount:.2f} Руб (SBP)",
-        #     open_app="your_mini_app_name",
-        #     payload=f"payment:{raffle_id}:{ticket_count}:{amount}"
-        # )
-
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[[payment_button]])
-        return keyboard
+        return builder.as_markup()
 
     async def handle_payment_callback(
         self, callback_data: str
