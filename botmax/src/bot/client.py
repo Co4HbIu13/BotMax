@@ -6,10 +6,11 @@ from typing import Optional, Dict, Any, List
 from maxapi import Bot, Dispatcher
 from maxapi.types import (
     MessageCreated,
-    CallbackQuery,
+    CallbackButton,
     BotStarted,
-    ChatMemberUpdated,
-    Update,
+    BotAdded,
+    BotRemoved,
+    MessageCallback,
 )
 
 from ..config import Config
@@ -53,13 +54,17 @@ class MAXBotClient:
         async def on_message_created(event: MessageCreated):
             await self._on_message_created(event)
 
-        @self.dp.callback_query()
-        async def on_callback_query(event: CallbackQuery):
-            await self._on_callback_query(event)
+        @self.dp.message_callback()
+        async def on_message_callback(event: MessageCallback):
+            await self._on_message_callback(event)
 
-        @self.dp.chat_member_updated()
-        async def on_chat_member_updated(event: ChatMemberUpdated):
-            await self._on_chat_member_updated(event)
+        @self.dp.bot_added()
+        async def on_bot_added(event: BotAdded):
+            await self._on_bot_added(event)
+
+        @self.dp.bot_removed()
+        async def on_bot_removed(event: BotRemoved):
+            await self._on_bot_removed(event)
 
     async def _on_bot_started(self, event: BotStarted) -> None:
         """Handle bot started event"""
@@ -93,13 +98,13 @@ class MAXBotClient:
                 message, text, user_id, username, chat_id
             )
 
-    async def _on_callback_query(self, event: CallbackQuery) -> None:
+    async def _on_message_callback(self, event: MessageCallback) -> None:
         """Handle callback queries from inline keyboards"""
-        callback = event.callback_query
+        callback = event.callback
         user_id = callback.from_user.id
         username = callback.from_user.username or f"user_{user_id}"
         chat_id = callback.message.chat.id if callback.message else None
-        data = callback.data
+        data = callback.payload
 
         self.logger.info(
             f"Received callback from {username} ({user_id}): {data}"
@@ -107,23 +112,19 @@ class MAXBotClient:
 
         await self._handle_callback(callback, user_id, username, chat_id, data)
 
-    async def _on_chat_member_updated(self, event: ChatMemberUpdated) -> None:
-        """Handle chat member updates (bot added/removed, etc.)"""
-        chat_member = event.chat_member
-        chat_id = chat_member.chat.id
-        new_status = chat_member.new_chat_member.status
-        user_id = chat_member.new_chat_member.user.id
-
+    async def _on_bot_added(self, event: BotAdded) -> None:
+        """Handle bot added to chat"""
         self.logger.info(
-            f"Chat member update in {chat_id}: user {user_id} status {new_status}"
+            f"Bot added to chat {event.chat.id}: {event.chat.title}"
         )
+        # No action needed for now
 
-        if new_status == "kicked" or new_status == "left":
-            # Bot was removed from chat
-            await self.db.close()
-        elif new_status in ["member", "administrator", "creator"]:
-            # Bot was added or promoted
-            pass
+    async def _on_bot_removed(self, event: BotRemoved) -> None:
+        """Handle bot removed from chat"""
+        self.logger.info(
+            f"Bot removed from chat {event.chat.id}"
+        )
+        await self.db.close()
 
     async def _handle_command(
         self,
