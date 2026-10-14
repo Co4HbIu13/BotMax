@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BotMAX Studio — Панель управления розыгрышами</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/admin.css?v=2.1.2">
+</head>
+<body>
+
+  <!-- ========================================================
+       1. AUTHENTICATION LOCK SCREEN (SECURITY SHIELD)
+       ======================================================== -->
+  <div id="authScreen" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-shield-glow">
+        <div class="auth-shield-icon">🛡️</div>
+      </div>
+      <h1 class="auth-title">BotMAX Studio</h1>
+      <p class="auth-subtitle">Защищенная панель управления играми и розыгрышами в мессенджере MAX</p>
+
+      <form id="loginForm" class="auth-form" onsubmit="return false;">
+        <div class="input-group">
+          <label for="adminUsername" class="input-label">Логин</label>
+          <input
+            type="text"
+            id="adminUsername"
+            class="auth-input"
+            placeholder="Введите логин (например, superadmin)..."
+            autocomplete="username"
+            value="superadmin"
+            required
+          >
+        </div>
+
+        <div class="input-group">
+          <label for="adminPassword" class="input-label">Пароль</label>
+          <div class="password-field-wrapper">
+            <input
+              type="password"
+              id="adminPassword"
+              class="auth-input"
+              placeholder="Введите пароль..."
+              autocomplete="current-password"
+              required
+            >
+            <button type="button" id="togglePasswordBtn" class="btn-eye" title="Показать/скрыть пароль">👁️</button>
+          </div>
+        </div>
+
+        <div id="authErrorMsg" class="auth-error-msg hidden"></div>
+
+        <button type="submit" id="loginBtn" class="btn-primary auth-submit-btn">
+          <span class="btn-text">Войти в панель</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <div class="auth-security-note">
+          <span class="lock-mini-icon">🔒</span> Доступ защищен криптографической сессией HMAC. Защита от подбора паролей активна.
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       2. MAIN ADMIN DASHBOARD
+       ======================================================== -->
+  <div id="adminApp" class="dashboard-wrapper hidden">
+    <!-- Navbar -->
+    <header class="dashboard-navbar">
+      <div class="nav-left">
+        <div class="logo-box">
+          <span class="logo-icon">🎰</span>
+          <div class="logo-text">
+            <span class="logo-title">BotMAX Studio</span>
+            <span class="logo-badge">Admin Hub</span>
+          </div>
+        </div>
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span>
+          <span>Сервер онлайн</span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <div id="currentUserPill" class="user-status-pill">
+          <span id="currentUserRoleBadge" class="badge-role-pill">👑 СуперАдмин</span>
+          <span id="currentUserName" class="user-name-text">Главный Администратор</span>
+        </div>
+        <button id="openProfileBtn" class="btn-profile-nav" title="Мои реквизиты СБП и профиль">
+          <span>⚙️</span> Мой СБП
+        </button>
+        <button id="openCreateModalBtn" class="btn-create-nav">
+          <span>➕</span> Создать игру
+        </button>
+        <button id="broadcastShowcaseBtn" class="btn-action-nav" title="Опубликовать и закрепить витрину во всех группах MAX">
+          <span>📢</span> В группы MAX
+        </button>
+        <button id="themeToggleBtn" class="btn-icon-nav" title="Переключить тему (Светлая/Темная)">
+          <span id="themeIcon">☀️</span>
+        </button>
+        <button id="logoutBtn" class="btn-icon-nav btn-logout" title="Выйти из системы">
+          <span>🚪</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <!-- Main Navigation Tabs for SuperAdmin -->
+      <div id="superadminNavTabs" class="main-nav-tabs hidden">
+        <button id="tabShowRaffles" class="main-nav-tab active">
+          <span>🎰</span> Игры и розыгрыши
+        </button>
+        <button id="tabShowAdmins" class="main-nav-tab">
+          <span>👥</span> Управление организаторами (<span id="countAdminsNav">0</span>)
+        </button>
+      </div>
+
+      <!-- Section: Key Metrics -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon-box icon-purple">🎲</div>
+          <div class="metric-info">
+            <span class="metric-label">Всего розыгрышей</span>
+            <span id="statTotalRaffles" class="metric-value">0</span>
+            <span id="statActiveRaffles" class="metric-sub">0 активных в игре</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box icon-blue">🎟️</div>
+          <div class="metric-info">
+            <span class="metric-label">Продано билетов</span>
+            <span id="statSoldTickets" class="metric-value">0</span>
+            <span id="statTicketsRatio" class="metric-sub">0% от общего пула</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box icon-green">💰</div>
+          <div class="metric-info">
+            <span class="metric-label">Выручка по СБП</span>
+            <span id="statTotalRevenue" class="metric-value">0 ₽</span>
+            <span class="metric-sub">Мгновенные платежи</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box icon-orange">👥</div>
+          <div class="metric-info">
+            <span class="metric-label">Групп в MAX</span>
+            <span id="statTotalGroups" class="metric-value">0</span>
+            <span id="statTotalUsers" class="metric-sub">0 участников</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Raffles Management -->
+      <section id="rafflesSection" class="section-card">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <h2 class="section-title">Управление играми и призами</h2>
+            <p id="rafflesSectionDesc" class="section-desc">Создавайте новые розыгрыши, следите за убытием билетов и запускайте определение победителей</p>
+          </div>
+
+          <div class="filters-row">
+            <div class="status-tabs">
+              <button class="status-tab active" data-filter="all">Все (<span id="countAll">0</span>)</button>
+              <button class="status-tab" data-filter="active">В игре (<span id="countActive">0</span>)</button>
+              <button class="status-tab" data-filter="completed">Завершенные (<span id="countCompleted">0</span>)</button>
+            </div>
+            <button id="refreshBtn" class="btn-refresh" title="Обновить список">🔄 Обновить</button>
+          </div>
+        </div>
+
+        <!-- Raffles Cards Grid -->
+        <div id="rafflesGrid" class="raffles-grid">
+          <!-- Dynamically filled by admin.js -->
+        </div>
+
+        <div id="emptyRafflesState" class="empty-state hidden">
+          <div class="empty-icon">🎁</div>
+          <h3>Нет созданных розыгрышей</h3>
+          <p>Нажмите кнопку «Создать игру», чтобы добавить первый приз!</p>
+          <button id="emptyCreateBtn" class="btn-primary mt-3">➕ Создать первую игру</button>
+        </div>
+      </section>
+
+      <!-- Section: Admins / Organizers Management (SuperAdmin only) -->
+      <section id="adminsSection" class="section-card hidden">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <h2 class="section-title">Организаторы и реквизиты СБП</h2>
+            <p class="section-desc">Управление администраторами, закрепление логинов/паролей и просмотр СБП-выручки каждого организатора</p>
+          </div>
+          <button id="openCreateAdminModalBtn" class="btn-primary">
+            <span>➕</span> Создать организатора
+          </button>
+        </div>
+
+        <div id="adminsListContainer" class="admins-grid">
+          <!-- Dynamically populated by admin.js -->
+        </div>
+
+        <div id="emptyAdminsState" class="empty-state hidden">
+          <div class="empty-icon">👥</div>
+          <h3>Нет дополнительных организаторов</h3>
+          <p>Вы можете создать первого администратора и выдать ему доступ!</p>
+          <button id="emptyCreateAdminBtn" class="btn-primary mt-3">➕ Создать организатора</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ========================================================
+       3. MODAL: CREATE NEW RAFFLE (GAME CREATOR)
+       ======================================================== -->
+  <div id="createModal" class="modal-backdrop hidden">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">🎲</span>
+          <div>
+            <h3 class="modal-title">Создать новую игру</h3>
+            <p class="modal-subtitle">Заполните параметры приза — билеты мгновенно появятся в витрине и боте</p>
+          </div>
+        </div>
+        <button id="closeCreateModalBtn" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="modal-body create-layout">
+        <!-- Form Left Column -->
+        <form id="createRaffleForm" class="create-form" onsubmit="return false;">
+          <div class="form-group">
+            <label class="form-label" for="raffleTitle">Название игры / розыгрыша *</label>
+            <input
+              type="text"
+              id="raffleTitle"
+              class="form-input"
+              placeholder="Например: Большой розыгрыш для дома или Кухонный батл"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="raffleDesc">Описание игры и условия</label>
+            <textarea
+              id="raffleDesc"
+              class="form-textarea"
+              rows="2"
+              placeholder="Краткое описание игры, условий участия, сроков проведения..."
+            ></textarea>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="totalTickets">Всего билетов на игру *</label>
+              <div class="chips-row">
+                <button type="button" class="chip-btn" data-tickets="20">20</button>
+                <button type="button" class="chip-btn active" data-tickets="50">50</button>
+                <button type="button" class="chip-btn" data-tickets="100">100</button>
+                <button type="button" class="chip-btn" data-tickets="200">200</button>
+              </div>
+              <input
+                type="number"
+                id="totalTickets"
+                class="form-input"
+                min="5"
+                max="5000"
+                value="50"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="pricePerTicket">Цена билета (₽) *</label>
+              <div class="chips-row">
+                <button type="button" class="chip-btn" data-price="50">50 ₽</button>
+                <button type="button" class="chip-btn active" data-price="100">100 ₽</button>
+                <button type="button" class="chip-btn" data-price="250">250 ₽</button>
+                <button type="button" class="chip-btn" data-price="500">500 ₽</button>
+              </div>
+              <input
+                type="number"
+                id="pricePerTicket"
+                class="form-input"
+                min="1"
+                step="1"
+                value="100"
+                required
+              >
+            </div>
+          </div>
+
+          <!-- Live Calculator -->
+          <div class="pool-calc-box">
+            <span class="calc-label">Общий призовой сбор игры:</span>
+            <span id="calcPoolTotal" class="calc-amount">5 000 ₽</span>
+            <span class="calc-formula">(50 билетов × 100 ₽)</span>
+          </div>
+
+          <!-- Multiple Prizes Section -->
+          <div class="prizes-management-box">
+            <div class="prizes-mgmt-header">
+              <div>
+                <span class="prizes-mgmt-title">🏆 Призовые места и лоты</span>
+                <span class="prizes-mgmt-sub">1 билет участвует в розыгрыше всех призовых мест</span>
+              </div>
+              <button type="button" id="addPrizePlaceBtn" class="btn-add-prize-place">
+                <span>➕ Добавить место</span>
+              </button>
+            </div>
+
+            <div id="prizesItemsContainer" class="prizes-items-container">
+              <!-- Dynamically populated prize rows by JS -->
+            </div>
+          </div>
+        </form>
+
+        <!-- Right Column: Live Card Preview -->
+        <div class="preview-column">
+          <span class="preview-header-label">Предпросмотр карточки игры в BotMAX</span>
+          <div class="preview-card-wrap">
+            <div class="preview-card">
+              <div class="preview-img-wrap">
+                <img id="prevImg" src="https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=800&q=80" alt="Preview">
+                <span id="prevBadge" class="preview-lot-badge">🏆 2 призовых места</span>
+              </div>
+              <div class="preview-content">
+                <h4 id="prevTitle" class="preview-title">Большой розыгрыш для дома</h4>
+                
+                <div id="prevPrizesList" class="prev-prizes-list">
+                  <!-- Rendered by JS -->
+                </div>
+
+                <div class="preview-price-row mt-2">
+                  <span class="prev-price-label">Билет:</span>
+                  <span id="prevPrice" class="prev-price-val">100 ₽</span>
+                </div>
+                <div class="prev-bar-box">
+                  <div class="prev-bar-bg"><div class="prev-bar-fill" style="width: 0%;"></div></div>
+                  <div class="prev-bar-labels">
+                    <span id="prevCountLabel">Доступно: 50/50</span>
+                    <span>0%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancelCreateBtn" class="btn-secondary">Отмена</button>
+        <button id="submitCreateBtn" class="btn-primary">
+          <span class="btn-text">🚀 Запустить игру в продажу</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       4. MODAL: WINNER DRAW (ROULETTE / CRYPTO GENERATOR)
+       ======================================================== -->
+  <div id="drawModal" class="modal-backdrop hidden">
+    <div class="modal-card modal-medium">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">🏆</span>
+          <div>
+            <h3 class="modal-title">Честное определение победителей</h3>
+            <p id="drawRaffleTitle" class="modal-subtitle">Розыгрыш игры</p>
+          </div>
+        </div>
+        <button id="closeDrawModalBtn" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="modal-body draw-body">
+        <div id="drawInitialState">
+          <p class="draw-intro-text">
+            Победители каждого призового места определяются криптографическим генератором случайных чисел (CSPRNG)
+            из всех фактически купленных билетов.
+          </p>
+          <div class="draw-stats-box">
+            <div>
+              <span class="d-label">Всего билетов:</span>
+              <span id="drawTotalTickets" class="d-val">0</span>
+            </div>
+            <div>
+              <span class="d-label">Куплено (участвуют):</span>
+              <span id="drawSoldTickets" class="d-val text-green">0</span>
+            </div>
+          </div>
+          <button id="startDrawBtn" class="btn-draw-trigger">
+            🎰 Разыграть все призовые места
+          </button>
+        </div>
+
+        <!-- Animation Roulette State -->
+        <div id="drawRollingState" class="draw-rolling hidden">
+          <div class="roulette-box">
+            <span class="roulette-drum" id="rouletteDrum">#??</span>
+          </div>
+          <p class="rolling-text">Генерация выигрышных билетов для призовых мест...</p>
+        </div>
+
+        <!-- Multi-Winner State -->
+        <div id="drawWinnerState" class="draw-winner-box hidden">
+          <div class="trophy-bounce">🏆</div>
+          <h2 class="winner-congrats">ПОБЕДИТЕЛИ ОПРЕДЕЛЕНЫ!</h2>
+          
+          <div id="drawWinnersListContainer" class="draw-winners-container">
+            <!-- Populated by JS for each place -->
+          </div>
+
+          <div class="winner-broadcast-note">
+            ✅ Каждому победителю отправлено уведомление в личные сообщения бота.<br>
+            ✅ Результаты всех призовых мест опубликованы во все группы MAX!
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="closeDrawBtn" class="btn-secondary">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       5. MODAL: TICKETS GRID INSPECTION
+       ======================================================== -->
+  <div id="ticketsModal" class="modal-backdrop hidden">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">🎫</span>
+          <div>
+            <h3 class="modal-title">Табло билетов</h3>
+            <p id="ticketsRaffleTitle" class="modal-subtitle">Сетка всех билетов</p>
+          </div>
+        </div>
+        <button id="closeTicketsModalBtn" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="tickets-legend">
+          <span class="legend-item"><span class="dot dot-avail"></span> Свободен</span>
+          <span class="legend-item"><span class="dot dot-res"></span> Бронь (10 мин)</span>
+          <span class="legend-item"><span class="dot dot-sold"></span> Куплен по СБП</span>
+          <span class="legend-item"><span class="dot dot-win"></span> Выигрышный</span>
+        </div>
+
+        <div id="ticketsInspectGrid" class="tickets-inspect-grid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="closeTicketsBtn" class="btn-secondary">Закрыть табло</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       6. MODAL: CREATE ADMIN / ORGANIZER (SUPERADMIN ONLY)
+       ======================================================== -->
+  <div id="createAdminModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">👤</span>
+          <div>
+            <h3 class="modal-title">Создать организатора</h3>
+            <p class="modal-subtitle">Логин, пароль и реквизиты СБП для начисления денег за билеты</p>
+          </div>
+        </div>
+        <button id="closeCreateAdminModalBtn" class="btn-close-modal">✕</button>
+      </div>
+
+      <form id="createAdminForm" class="modal-body" onsubmit="return false;">
+        <div class="form-group mb-3">
+          <label class="form-label" for="newAdminUsername">Логин организатора *</label>
+          <input type="text" id="newAdminUsername" class="form-input" placeholder="например: ivan_manager" required autocomplete="off">
+          <span class="form-hint">Будет использоваться для входа в панель</span>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="newAdminPassword">Пароль для входа *</label>
+          <input type="password" id="newAdminPassword" class="form-input" placeholder="Минимум 4 символа" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="newAdminDisplayName">Имя / Псевдоним *</label>
+          <input type="text" id="newAdminDisplayName" class="form-input" placeholder="например: Иван (Организатор)" required>
+          <span class="form-hint">Отображается в карточках розыгрышей и в боте</span>
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group flex-1">
+            <label class="form-label" for="newAdminSbpPhone">Номер телефона СБП *</label>
+            <input type="text" id="newAdminSbpPhone" class="form-input" placeholder="+7 999 000-00-00">
+            <span class="form-hint">Куда покупатели билетов отправляют деньги</span>
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="form-label" for="newAdminSbpBank">Банк получателя СБП</label>
+            <input type="text" id="newAdminSbpBank" class="form-input" placeholder="например: Т-Банк, Сбербанк" value="Т-Банк">
+          </div>
+        </div>
+
+        <div id="createAdminErrorMsg" class="auth-error-msg hidden mb-3"></div>
+      </form>
+
+      <div class="modal-footer">
+        <button id="cancelCreateAdminBtn" class="btn-secondary">Отмена</button>
+        <button id="submitCreateAdminBtn" class="btn-primary">
+          <span class="btn-text">Создать профиль</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       7. MODAL: MY PROFILE & SBP DETAILS
+       ======================================================== -->
+  <div id="profileModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">⚙️</span>
+          <div>
+            <h3 class="modal-title">Мои реквизиты СБП</h3>
+            <p class="modal-subtitle">Настройка данных для приема платежей за ваши розыгрыши</p>
+          </div>
+        </div>
+        <button id="closeProfileModalBtn" class="btn-close-modal">✕</button>
+      </div>
+
+      <form id="profileForm" class="modal-body" onsubmit="return false;">
+        <div class="form-group mb-3">
+          <label class="form-label">Ваш логин</label>
+          <input type="text" id="profileUsername" class="form-input" disabled>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="profileDisplayName">Имя / Отображаемое название</label>
+          <input type="text" id="profileDisplayName" class="form-input" placeholder="Ваше имя">
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group flex-1">
+            <label class="form-label" for="profileSbpPhone">Номер телефона СБП</label>
+            <input type="text" id="profileSbpPhone" class="form-input" placeholder="+7 999 123-45-67">
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="form-label" for="profileSbpBank">Банк для СБП</label>
+            <input type="text" id="profileSbpBank" class="form-input" placeholder="например: Т-Банк / Сбербанк">
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="profileNewPassword">Новый пароль (оставьте пустым, если не меняете)</label>
+          <input type="password" id="profileNewPassword" class="form-input" placeholder="Новый пароль..." autocomplete="new-password">
+        </div>
+
+        <div id="profileSuccessMsg" class="auth-security-note hidden mb-2" style="color: var(--accent-green); background: rgba(16, 185, 129, 0.1);">
+          ✓ Реквизиты успешно сохранены
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button id="closeProfileBtn" class="btn-secondary">Закрыть</button>
+        <button id="saveProfileBtn" class="btn-primary">
+          <span class="btn-text">Сохранить реквизиты</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/static/admin.js?v=2.2.0"></script>
+</body>
+</html>

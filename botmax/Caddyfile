@@ -1,0 +1,15 @@
+anussai.duckdns.org {
+    reverse_proxy botmax:8000 {
+        header_down -X-Frame-Options
+        header_down Content-Security-Policy "frame-ancestors * https: http:;"
+    }
+
+    encode zstd gzip
+
+    header {
+        Access-Control-Allow-Origin *
+        X-Content-Type-Options nosniff
+        -X-Frame-Options
+        Content-Security-Policy "frame-ancestors * https: http:;"
+    }
+}

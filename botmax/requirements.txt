@@ -1,8 +1,10 @@
-maxapi>=0.1.0
+maxapi>=1.2.2
 python-dotenv>=1.0.0
-sqlalchemy>=2.0.0
 aiosqlite>=0.20.0
 aiohttp>=3.10.0
 fastapi>=0.110.0
 uvicorn>=0.29.0
 pydantic>=2.7.0
+qrcode>=8.0
+pillow>=10.0.0
+python-multipart>=0.0.9

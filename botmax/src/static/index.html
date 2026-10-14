@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BotMAX — Розыгрыши и билеты с оплатой по СБП</title>
+  <meta name="description" content="Официальное мини-приложение розыгрышей призов в мессенджере MAX с моментальной оплатой через Систему быстрых платежей (СБП).">
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- Confetti library for celebration animations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <div class="brand-logo">🎰</div>
+        <div>
+          <div class="brand-title">
+            BotMAX
+            <span class="badge-sbp-tag">СБП</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="themeToggleBtn" class="icon-btn" title="Переключить тему" aria-label="Сменить тему">🌙</button>
+        <div id="userBadge" class="user-badge" title="Пользователь">
+          <span>👤</span>
+          <span id="userNameDisplay">Участник</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="raffles" id="tabBtnRaffles">🎁 Розыгрыши</button>
+      <button class="tab-btn" data-tab="board" id="tabBtnBoard">🎫 Выбор билетов</button>
+      <button class="tab-btn" data-tab="portfolio" id="tabBtnPortfolio">🎟️ Мои билеты</button>
+      <button class="tab-btn" data-tab="hall" id="tabBtnHall">🏆 Победители</button>
+    </nav>
+
+    <!-- View Container -->
+    <main class="view-container">
+
+      <!-- ==========================================
+           VIEW 1: RAFFLES CATALOG
+           ========================================== -->
+      <section id="viewRaffles" class="view-section active">
+        <div class="section-header">
+          <h1 class="section-title">Актуальные розыгрыши</h1>
+          <p class="section-subtitle">Выберите приз, забронируйте билеты и оплатите по СБП. Билеты убывают из пула в реальном времени!</p>
+        </div>
+
+        <div id="rafflesLoading" style="text-align: center; padding: 40px 0;">
+          <p style="color: var(--text-secondary);">Загрузка призов...</p>
+        </div>
+
+        <div id="rafflesGrid" class="raffles-grid"></div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 2: TICKET BOARD & DRAWDOWN
+           ========================================== -->
+      <section id="viewBoard" class="view-section">
+        <div id="boardHeader" class="board-header">
+          <div class="board-raffle-info">
+            <img id="boardRaffleThumb" src="" alt="Приз" class="board-raffle-thumb">
+            <div class="board-raffle-text">
+              <h3 id="boardRaffleTitle">Загрузка розыгрыша...</h3>
+              <p id="boardRaffleSubtitle">Выберите свободные билеты</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="ticket-legend">
+          <div class="legend-item"><span class="legend-dot dot-available"></span> Доступен</div>
+          <div class="legend-item"><span class="legend-dot dot-selected"></span> Выбран вами</div>
+          <div class="legend-item"><span class="legend-dot dot-reserved"></span> Бронь (в оплате)</div>
+          <div class="legend-item"><span class="legend-dot dot-sold"></span> Убыл (куплен)</div>
+          <div class="legend-item"><span class="legend-dot dot-winner"></span> Победитель</div>
+        </div>
+
+        <!-- Quick Pick Bar -->
+        <div class="quick-select-bar">
+          <button id="btnQuickRandom1" class="btn-quick special">🎲 Случайный (Мне повезет!)</button>
+          <button id="btnQuickPlus1" class="btn-quick">+1 билет</button>
+          <button id="btnQuickPlus3" class="btn-quick">+3 билета</button>
+          <button id="btnQuickPlus5" class="btn-quick">+5 билетов</button>
+          <button id="btnClearSelection" class="btn-quick">Очистить</button>
+        </div>
+
+        <!-- Interactive Grid -->
+        <div id="ticketsGrid" class="tickets-grid"></div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 3: USER PORTFOLIO
+           ========================================== -->
+      <section id="viewPortfolio" class="view-section">
+        <div class="section-header">
+          <h2 class="section-title">Мои лотерейные билеты</h2>
+          <p class="section-subtitle">История ваших билетов и результаты розыгрышей</p>
+        </div>
+
+        <div id="userTicketsList" class="user-tickets-list">
+          <div style="text-align: center; padding: 40px 16px; color: var(--text-secondary);">
+            У вас пока нет активных билетов. Выберите приз в каталоге!
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 4: WINNERS & DRAW ROULETTE
+           ========================================== -->
+      <section id="viewHall" class="view-section">
+        <div class="section-header">
+          <h2 class="section-title">Зал славы и розыгрыши</h2>
+          <p class="section-subtitle">Честное определение победителей с помощью криптографического ГСЧ</p>
+        </div>
+
+        <!-- Animated Draw Machine -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 20px; text-align: center; margin-bottom: 20px;">
+          <h3 style="font-size: 16px; margin-bottom: 12px;">🎰 Генератор случайного победителя</h3>
+          <div id="rouletteDisplay" style="font-size: 42px; font-weight: 800; color: var(--accent-blue); padding: 16px 0; letter-spacing: 2px;">
+            № --
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+            Когда все билеты проданы, запускается генератор случайных чисел
+          </p>
+          <button id="btnSimulateDraw" class="btn-quick special" style="width: 100%; padding: 12px;">
+            🎉 Демонстрация рулетки розыгрыша
+          </button>
+        </div>
+
+        <div id="completedRafflesList"></div>
+      </section>
+
+    </main>
+
+    <!-- Floating Checkout Bar (Visible in Board View) -->
+    <div id="floatingCheckoutBar" class="floating-checkout-bar" style="display: none;">
+      <div class="checkout-summary">
+        <span id="checkoutTicketsCount" class="checkout-tickets-count">Выбрано: 0 билетов</span>
+        <span id="checkoutTotalPrice" class="checkout-total-price">0 ₽</span>
+      </div>
+      <button id="btnProceedSbp" class="btn-proceed-sbp" disabled>
+        <span>Оплатить через СБП</span>
+        <span>→</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ==========================================
+       MODAL: SBP PAYMENT
+       ========================================== -->
+  <div id="modalSbp" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header-sbp">
+        <div class="sbp-brand-badge">
+          <div class="sbp-triangles">
+            <span class="sbp-t1"></span>
+            <span class="sbp-t2"></span>
+            <span class="sbp-t3"></span>
+          </div>
+          <span style="font-weight: 800; font-size: 16px; letter-spacing: 0.5px;">СИСТЕМА БЫСТРЫХ ПЛАТЕЖЕЙ</span>
+        </div>
+        <button id="btnCloseSbpModal" class="icon-btn" style="background: rgba(255,255,255,0.15); border: none; color: white;">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="sbpModalRaffleTitle" style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">--</div>
+        <div id="sbpModalTicketNumbers" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Билеты: --</div>
+        <div id="sbpModalAmount" style="font-size: 26px; font-weight: 800; color: var(--accent-blue); margin-bottom: 8px;">0 ₽</div>
+
+        <div class="countdown-box">
+          <span>⏱️</span>
+          <span>Бронь билетов: </span>
+          <span id="sbpCountdownDisplay">10:00</span>
+        </div>
+
+        <div>
+          <div class="sbp-qr-container">
+            <img id="sbpQrImage" class="sbp-qr-img" src="" alt="QR-код СБП">
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+          Отсканируйте камерой смартфона или нажмите кнопку ниже:
+        </div>
+
+        <div class="sbp-banks-row">
+          <span class="bank-chip">СберБанк</span>
+          <span class="bank-chip">Т-Банк</span>
+          <span class="bank-chip">ВТБ</span>
+          <span class="bank-chip">Альфа-Банк</span>
+        </div>
+
+        <button id="btnOpenBankApp" class="btn-open-bank-app">
+          📲 Оплатить в приложении банка (СБП)
+        </button>
+
+        <button id="btnSimulateSbpSuccess" class="btn-simulate-payment">
+          ⚡ Симуляция успешной оплаты (Тест СБП)
+        </button>
+
+        <button id="btnCancelOrder" class="btn-close-modal">
+          Отменить заказ и освободить билеты
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: SUCCESS CONFIRMATION
+       ========================================== -->
+  <div id="modalSuccess" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-body success-card">
+        <div class="success-icon-anim">✓</div>
+        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Оплата по СБП прошла!</h2>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+          Поздравляем! Ваши билеты успешно выкуплены и навсегда убыли из общего пула розыгрыша.
+        </p>
+
+        <div style="background: var(--bg-secondary); border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px; text-align: left;">
+          <div style="font-size: 12px; color: var(--text-secondary);">Розыгрыш:</div>
+          <div id="successRaffleTitle" style="font-weight: 700; margin-bottom: 8px;">--</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">Выкупленные номера билетов:</div>
+          <div id="successTicketsList" style="font-weight: 800; color: var(--accent-blue); font-size: 16px;">--</div>
+        </div>
+
+        <button id="btnGoToPortfolio" class="btn-select-tickets">
+          Посмотреть в «Моих билетах»
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Application Script -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
