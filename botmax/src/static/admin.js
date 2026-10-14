@@ -162,6 +162,21 @@
     updateCashierSoundUI();
     checkAuthSession();
     bindEvents();
+    loadApkVersion();
+  }
+
+  async function loadApkVersion() {
+    try {
+      const res = await fetch("/static/version.json?t=" + Date.now());
+      if (res.ok) {
+        const vData = await res.json();
+        if (vData && vData.version) {
+          document.querySelectorAll(".apk-version-badge").forEach(el => {
+            el.textContent = `v${vData.version}`;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   if (document.readyState === "loading") {
