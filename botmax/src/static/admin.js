@@ -481,14 +481,25 @@
 
   function triggerAdminVibration() {
     try {
+      if (window.BotMaxAndroid && typeof window.BotMaxAndroid.vibrate === "function") {
+        window.BotMaxAndroid.vibrate(350);
+        return;
+      }
       if ("vibrate" in navigator) {
         navigator.vibrate([200, 100, 200]);
       }
     } catch (_) {}
   }
 
-  function triggerWebNotification(title, body) {
+  function triggerWebNotification(title, body, orderId) {
     try {
+      // 1. Android Native Push Notification via BotMaxAndroid bridge
+      if (window.BotMaxAndroid && typeof window.BotMaxAndroid.showNotification === "function") {
+        window.BotMaxAndroid.showNotification(title, body, orderId || "");
+        return;
+      }
+
+      // 2. Standard Web Notification API
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification(title, {
           body: body,

@@ -24,6 +24,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
     public static final String KEY_SERVER_URL = "server_url";
     public static final String DEFAULT_URL = "https://anussai.duckdns.org/admin";
     public static final int FILE_CHOOSER_REQUEST_CODE = 1001;
+    public static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1002;
+    public static final String NOTIFICATION_CHANNEL_ID = "botmax_cashier_alerts";
+    public static final String NOTIFICATION_CHANNEL_NAME = "Касса BotMAX - Заказы";
 
     private WebView webView;
     private ProgressBar loadingIndicator;
@@ -48,6 +51,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         btnRetry = (Button) findViewById(R.id.btnRetry);
         btnSettings = (Button) findViewById(R.id.btnSettings);
 
+        createNotificationChannel();
+        requestNotificationPermission();
+
         setupWebView();
 
         if (btnRetry != null) {
@@ -58,6 +64,32 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
 
         loadAdminUrl();
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Мгновенные оповещения о новых заказах и оплатах");
+            channel.enableVibration(true);
+            channel.enableLights(true);
+            channel.setVibrationPattern(new long[]{0, 250, 150, 250});
+            android.app.NotificationManager manager = (android.app.NotificationManager) getSystemService(android.content.Context.NOTIFICATION_SERVICE);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, NOTIFICATION_PERMISSION_REQUEST_CODE);
+            }
+        }
     }
 
     private void setupWebView() {
