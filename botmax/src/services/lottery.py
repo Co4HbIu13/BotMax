@@ -187,6 +187,77 @@ class LotteryService:
             "raffle": raffle,
         }
 
+    async def cancel_reservation(
+        self,
+        order_id: str,
+        user_id: Optional[int] = None,
+        is_admin: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Cancel reservation and return tickets back to 'available' pool.
+        Permitted for the participant holding the order or any administrator.
+        """
+        order = await self.db.get_order(order_id)
+        if not order:
+            return {"success": False, "error": f"Заказ {order_id} не найден"}
+
+        if order["status"] != "pending":
+            return {
+                "success": False,
+                "error": f"Заказ не находится в статусе бронирования (текущий статус: {order['status']})",
+            }
+
+        if not is_admin and user_id is not None and order["user_id"] != user_id:
+            return {"success": False, "error": "Вы можете отменить только свою бронь"}
+
+        cancelled = await self.db.cancel_order(
+            order_id=order_id,
+            reason="cancelled_by_admin" if is_admin else "cancelled_by_user",
+        )
+        if not cancelled:
+            return {"success": False, "error": "Не удалось отменить бронь"}
+
+        return {
+            "success": True,
+            "message": "Бронь билетов успешно снята. Билеты возвращены в продажу.",
+            "order_id": order_id,
+            "released_tickets": cancelled["ticket_numbers"],
+        }
+
+    async def get_user_active_reservation(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get active pending order for user with regenerated QR code data URL and raffle details.
+        """
+        order = await self.db.get_active_user_order(user_id)
+        if not order:
+            return None
+
+        # Build SBP data payload with QR
+        qr_data_url = self.sbp_service.generate_qr_code_data_url(order["sbp_pay_url"])
+        sum_kopecks = int(round(order["amount"] * 100))
+        deep_link = f"sbp://qr.nspk.ru/{order['sbp_qrid']}?type=02&sum={sum_kopecks}&cur=RUB"
+
+        return {
+            "order_id": order["id"],
+            "raffle_id": order["raffle_id"],
+            "raffle_title": order.get("raffle_title", "Розыгрыш"),
+            "ticket_numbers": order["ticket_numbers"],
+            "ticket_count": len(order["ticket_numbers"]),
+            "amount": order["amount"],
+            "expires_at": order["expires_at"],
+            "sbp": {
+                "qrid": order["sbp_qrid"],
+                "nspk_url": order["sbp_pay_url"],
+                "deep_link": deep_link,
+                "qr_data_url": qr_data_url,
+            },
+            "recipient": {
+                "display_name": order.get("creator_name", "Главный Администратор"),
+                "sbp_phone": order.get("creator_sbp_phone", ""),
+                "sbp_bank": order.get("creator_sbp_bank", "СБП"),
+            },
+        }
+
     async def draw_raffle_winner(
         self, raffle_id: str, chat_id: Optional[int] = None
     ) -> Dict[str, Any]:

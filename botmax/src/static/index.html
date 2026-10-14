@@ -2,10 +2,10 @@
 <html lang="ru" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>BotMAX — Розыгрыши и билеты с оплатой по СБП</title>
   <meta name="description" content="Официальное мини-приложение розыгрышей призов в мессенджере MAX с моментальной оплатой через Систему быстрых платежей (СБП).">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=2.2.0">
   <!-- Confetti library for celebration animations -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
@@ -32,6 +32,26 @@
         </div>
       </div>
     </header>
+
+    <!-- Active Reservation Banner (Quick return to SBP or release tickets) -->
+    <div id="activeReservationBanner" class="active-reservation-banner hidden">
+      <div class="res-banner-inner">
+        <div class="res-banner-icon-col">
+          <span class="res-banner-pulse">⏳</span>
+        </div>
+        <div class="res-banner-text-col">
+          <div class="res-banner-title">
+            <span>У вас есть бронь билетов</span>
+            <span id="resBannerCountdown" class="res-banner-timer">--:--</span>
+          </div>
+          <div id="resBannerSubtitle" class="res-banner-sub">Билеты ожидают оплаты по СБП</div>
+        </div>
+        <div class="res-banner-actions">
+          <button id="btnResResume" class="btn-res-pay">💳 Оплатить</button>
+          <button id="btnResCancel" class="btn-res-cancel" title="Снять бронь">✕</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Navigation Tabs -->
     <nav class="nav-tabs" role="tablist">
@@ -73,6 +93,9 @@
             </div>
           </div>
         </div>
+
+        <!-- Lots & Prizes Showcase (Lot 1, Lot 2, Lot 3... with descriptions & photos) -->
+        <div id="boardLotsContainer" class="board-lots-showcase"></div>
 
         <!-- Legend -->
         <div class="ticket-legend">

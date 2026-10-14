@@ -71,16 +71,24 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   font-family: var(--font-family);
   background-color: var(--bg-surface);
   color: var(--text-primary);
   line-height: 1.45;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
-  overflow-x: hidden;
   transition: background-color var(--transition-normal), color var(--transition-normal);
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* App Container (Mobile viewport optimized) */
@@ -88,6 +96,9 @@ body {
   width: 100%;
   max-width: 520px;
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  box-sizing: border-box;
   background-color: var(--bg-primary);
   display: flex;
   flex-direction: column;
@@ -186,6 +197,104 @@ body {
   align-items: center;
   gap: 5px;
   cursor: pointer;
+}
+
+/* Active Reservation Alert Banner */
+.active-reservation-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border-bottom: 1.5px solid rgba(245, 158, 11, 0.35);
+  padding: 10px 14px;
+  animation: slideDown 0.3s ease-out;
+}
+.active-reservation-banner.hidden {
+  display: none !important;
+}
+.res-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.res-banner-icon-col {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.res-banner-pulse {
+  display: inline-block;
+  animation: pulse-icon 1.5s infinite;
+}
+@keyframes pulse-icon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.res-banner-text-col {
+  flex: 1;
+  min-width: 0;
+}
+.res-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.res-banner-timer {
+  background: #f59e0b;
+  color: #000;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: monospace;
+}
+.res-banner-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.res-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-res-pay {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transition: all var(--transition-fast);
+}
+.btn-res-pay:hover {
+  transform: translateY(-1px);
+}
+.btn-res-cancel {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+}
+.btn-res-cancel:hover {
+  background: rgba(239, 68, 68, 0.25);
 }
 
 /* Nav Tabs */
@@ -485,6 +594,115 @@ body {
 .board-raffle-text p {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* Multi-Lot Showcase in Board View */
+.board-lots-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.board-lot-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.board-lot-header {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+}
+.board-lot-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #ffffff;
+  white-space: nowrap;
+}
+.board-lot-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+.board-lot-body {
+  padding: 12px 14px;
+}
+.board-lot-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.board-lot-img-wrap {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+}
+.board-lot-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Catalog Card Multi-Lot Showcase */
+.card-lots-showcase {
+  margin: 10px 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-lot-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  padding: 10px;
+}
+.card-lot-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.card-lot-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  white-space: nowrap;
+}
+.card-lot-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.card-lot-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+.card-lot-img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  display: block;
 }
 
 /* Color Legend */

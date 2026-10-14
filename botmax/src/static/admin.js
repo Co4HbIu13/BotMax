@@ -877,6 +877,13 @@
     }
   }
 
+  function updatePrizeDescription(idx, val) {
+    if (currentPrizes[idx]) {
+      currentPrizes[idx].description = val;
+      updateLivePreview();
+    }
+  }
+
   function renderPrizeItems() {
     const container = document.getElementById("prizesItemsContainer");
     if (!container) return;
@@ -908,6 +915,16 @@
               value="${escapeHtml(p.title)}"
               oninput="window.botmaxAdmin.updatePrizeTitle(${idx}, this.value)"
               required
+            >
+          </div>
+
+          <div class="form-group mb-1">
+            <input
+              type="text"
+              class="form-input prize-desc-input"
+              placeholder="Описание лота (например: Антипригарное покрытие, новая в упаковке)"
+              value="${escapeHtml(p.description || '')}"
+              oninput="window.botmaxAdmin.updatePrizeDescription(${idx}, this.value)"
             >
           </div>
 
@@ -1239,20 +1256,86 @@
     const raffle = rafflesList.find(r => r.id === raffleId);
     ticketsRaffleTitle.textContent = raffle ? raffle.title : "Сетка билетов";
     ticketsInspectGrid.innerHTML = "<p style='grid-column: 1/-1; text-align: center;'>Загрузка билетов...</p>";
+    const pendingContainer = document.getElementById("ticketsPendingReservations");
+    if (pendingContainer) {
+      pendingContainer.classList.add("hidden");
+      pendingContainer.innerHTML = "";
+    }
     ticketsModal.classList.remove("hidden");
 
     try {
-      const res = await fetch(`/api/admin/raffles/${raffleId}/tickets`, {
-        headers: { "Authorization": `Bearer ${adminToken}` },
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        renderTicketsInspectGrid(data.tickets);
+      const [ticketsRes, pendingRes] = await Promise.all([
+        fetch(`/api/admin/raffles/${raffleId}/tickets`, {
+          headers: { "Authorization": `Bearer ${adminToken}` },
+        }),
+        fetch(`/api/admin/raffles/${raffleId}/pending-reservations`, {
+          headers: { "Authorization": `Bearer ${adminToken}` },
+        }).catch(() => null),
+      ]);
+
+      const ticketsData = await ticketsRes.json();
+      if (ticketsRes.ok && ticketsData.success) {
+        renderTicketsInspectGrid(ticketsData.tickets);
       } else {
         ticketsInspectGrid.innerHTML = "<p>Ошибка загрузки билетов</p>";
       }
+
+      if (pendingRes && pendingRes.ok) {
+        const pendingData = await pendingRes.json();
+        const orders = pendingData.pending_orders || [];
+        if (pendingContainer && orders.length > 0) {
+          pendingContainer.classList.remove("hidden");
+          pendingContainer.innerHTML = `
+            <div class="pending-res-banner">
+              <div class="pending-res-banner-title">
+                <span>⏳ Забронированные билеты (${orders.length} заказов):</span>
+              </div>
+              <div class="pending-res-list">
+                ${orders.map(o => `
+                  <div class="pending-res-row">
+                    <div class="pending-res-info">
+                      <span class="pending-res-tickets">Билеты: <b>${o.ticket_numbers.map(n => '#' + n).join(', ')}</b></span>
+                      <span class="pending-res-user">Участник: <b>@${escapeHtml(o.username || o.user_id)}</b></span>
+                      <span class="pending-res-sum">Сумма: <b>${Math.round(o.amount)} ₽</b></span>
+                    </div>
+                    <button type="button" class="btn-action-release-res" onclick="window.botmaxAdmin.releaseReservation('${o.id}', '${raffleId}')" title="Снять бронь и вернуть билеты в продажу">
+                      ❌ Снять бронь
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+      }
     } catch (e) {
       ticketsInspectGrid.innerHTML = "<p>Ошибка сервера</p>";
+    }
+  }
+
+  async function releaseReservation(orderId, raffleId) {
+    if (!confirm("Вы действительно хотите снять бронь с этого заказа и вернуть билеты в доступные?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/release`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${adminToken}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast("✅ Бронь успешно снята, билеты снова в продаже!", "success");
+        await inspectTickets(raffleId);
+        loadRafflesList();
+        loadSystemMetrics();
+      } else {
+        showToast(data.detail || data.error || "Ошибка при снятии брони", "error");
+      }
+    } catch (e) {
+      showToast("Ошибка соединения с сервером", "error");
     }
   }
 
@@ -1555,6 +1638,8 @@
     addPrizePlace,
     removePrize,
     updatePrizeTitle,
+    updatePrizeDescription,
+    releaseReservation,
     handlePrizeFileChange,
     openCreateModal,
     deleteAdminUser,

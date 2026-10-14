@@ -88,6 +88,10 @@ class UpdateRaffleStatusRequest(BaseModel):
     status: str  # active, completed, cancelled
 
 
+class CancelOrderRequest(BaseModel):
+    user_id: Optional[int] = None
+
+
 def setup_routes(
     lottery_service: LotteryService,
     sbp_service: SBPService,
@@ -237,6 +241,21 @@ def setup_routes(
         """Get all tickets purchased by a specific user"""
         tickets = await db.get_user_tickets(user_id)
         return {"success": True, "tickets": tickets}
+
+    @api_router.get("/users/{user_id}/active-reservation")
+    async def get_active_reservation(user_id: int):
+        """Retrieve active pending order for user with payment data and ticket numbers"""
+        order = await lottery_service.get_user_active_reservation(user_id)
+        return {"success": True, "has_active": bool(order), "order": order}
+
+    @api_router.post("/orders/{order_id}/cancel")
+    async def cancel_order(order_id: str, req: Optional[CancelOrderRequest] = None):
+        """Cancel reservation and release tickets back to available pool"""
+        user_id = req.user_id if req else None
+        result = await lottery_service.cancel_reservation(order_id, user_id=user_id, is_admin=False)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result.get("error", "Не удалось отменить бронь"))
+        return result
 
     # ==========================================
     # 2. ADMIN AUTHENTICATION & PROFILE ENDPOINTS
@@ -569,10 +588,30 @@ def setup_routes(
         )
         kb = group_showcase_keyboard(config.mini_app_url, bot_username, bot_id)
 
-        sent_count = await notification_service.broadcast_to_all_groups(
-            text=text, attachments=[kb], pin=True
+        sent_count = await notification_service.broadcast_raffle_announcement(
+            raffle=raffle, keyboard=kb, pin=True
         )
         return {"success": True, "broadcasted_groups_count": sent_count}
+
+    @api_router.post("/admin/orders/{order_id}/release")
+    async def admin_release_reservation(
+        order_id: str,
+        current_admin: Dict[str, Any] = Depends(require_admin),
+    ):
+        """Admin force-release of reserved tickets back to the available pool"""
+        result = await lottery_service.cancel_reservation(order_id, is_admin=True)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result.get("error", "Не удалось снять бронь"))
+        return result
+
+    @api_router.get("/admin/raffles/{raffle_id}/pending-reservations")
+    async def get_admin_pending_reservations(
+        raffle_id: str,
+        current_admin: Dict[str, Any] = Depends(require_admin),
+    ):
+        """Get all active reserved tickets and orders for this raffle"""
+        orders = await db.get_raffle_pending_orders(raffle_id)
+        return {"success": True, "pending_orders": orders}
 
     @api_router.post("/admin/broadcast-showcase")
     async def broadcast_full_showcase(_: Dict[str, Any] = Depends(require_admin)):

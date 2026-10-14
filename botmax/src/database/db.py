@@ -45,6 +45,7 @@ class Database:
             self._connection = await aiosqlite.connect(self.db_path)
             self._connection.row_factory = aiosqlite.Row
             await self._connection.execute("PRAGMA journal_mode = WAL")
+            await self._connection.execute("PRAGMA busy_timeout = 10000")
             await self._connection.execute("PRAGMA foreign_keys = ON")
             await self._connection.commit()
             await self._create_tables()
@@ -990,6 +991,111 @@ class Database:
             order["paid_at"] = now_iso
             order["ticket_numbers"] = ticket_numbers
             return order
+
+    async def cancel_order(
+        self, order_id: str, reason: str = "cancelled_by_user"
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Cancel a pending order and immediately release its reserved tickets back to 'available'.
+        Can be triggered by participant or admin.
+        """
+        now_iso = utc_now_iso()
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+            row = await cur.fetchone()
+            if not row:
+                return None
+            order = dict(row)
+
+            if order["status"] != "pending":
+                logger.warning(f"Cannot cancel order {order_id} in status {order['status']}")
+                return None
+
+            ticket_numbers = json.loads(order["ticket_numbers"])
+            placeholders = ",".join(["?"] * len(ticket_numbers))
+
+            # 1. Update order status to cancelled
+            await cur.execute("""
+                UPDATE orders
+                SET status = 'cancelled'
+                WHERE id = ? AND status = 'pending'
+            """, (order_id,))
+
+            # 2. Release reserved tickets back to 'available'
+            await cur.execute(f"""
+                UPDATE tickets
+                SET status = 'available',
+                    user_id = NULL,
+                    username = NULL,
+                    order_id = NULL,
+                    reserved_until = NULL
+                WHERE raffle_id = ?
+                  AND ticket_number IN ({placeholders})
+                  AND status = 'reserved'
+            """, [order["raffle_id"], *ticket_numbers])
+
+            await conn.commit()
+            logger.info(
+                f"Cancelled order {order_id} ({reason}). "
+                f"Released tickets {ticket_numbers} back to available pool for raffle {order['raffle_id']}"
+            )
+
+            order["status"] = "cancelled"
+            order["ticket_numbers"] = ticket_numbers
+            return order
+
+    async def get_active_user_order(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve active unexpired pending order for user so they can resume payment or cancel reservation.
+        """
+        now_iso = utc_now_iso()
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            await cur.execute("""
+                SELECT o.*,
+                       r.title as raffle_title,
+                       r.price_per_ticket,
+                       COALESCE(a.display_name, 'Главный Администратор') as creator_name,
+                       COALESCE(a.sbp_phone, '') as creator_sbp_phone,
+                       COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank
+                FROM orders o
+                LEFT JOIN raffles r ON o.raffle_id = r.id
+                LEFT JOIN admins a ON o.recipient_admin_id = a.id
+                WHERE o.user_id = ?
+                  AND o.status = 'pending'
+                  AND o.expires_at > ?
+                ORDER BY o.created_at DESC
+                LIMIT 1
+            """, (user_id, now_iso))
+            row = await cur.fetchone()
+            if not row:
+                return None
+            order = dict(row)
+            order["ticket_numbers"] = json.loads(order["ticket_numbers"])
+            return order
+
+    async def get_raffle_pending_orders(self, raffle_id: str) -> List[Dict[str, Any]]:
+        """
+        List all active pending reservations for a raffle (for admin inspection and cancellation).
+        """
+        now_iso = utc_now_iso()
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            await cur.execute("""
+                SELECT * FROM orders
+                WHERE raffle_id = ?
+                  AND status = 'pending'
+                  AND expires_at > ?
+                ORDER BY created_at DESC
+            """, (raffle_id, now_iso))
+            rows = await cur.fetchall()
+            results = []
+            for r in rows:
+                o = dict(r)
+                o["ticket_numbers"] = json.loads(o["ticket_numbers"])
+                results.append(o)
+            return results
 
     async def get_user_tickets(self, user_id: int) -> List[Dict[str, Any]]:
         """Get all tickets purchased or reserved by a user across all raffles"""

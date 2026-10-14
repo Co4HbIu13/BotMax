@@ -22,6 +22,16 @@
     syncInterval: null,
   };
 
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   // Initialize User from URL Query Params or LocalStorage
   function initUser() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -146,33 +156,41 @@
     const prizesCount = prizes.length;
     const badgeTextLot = prizesCount > 1 ? `🏆 ${prizesCount} призовых мест` : `🏷️ Лот №${r.lot_number || 1}`;
     const mainImg = (prizes[0] && prizes[0].prize_image_url) ? prizes[0].prize_image_url : r.prize_image_url;
+    const medalMap = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-    let prizesStripHtml = "";
+    let multiLotsHtml = "";
     if (prizesCount > 1) {
-      const medalMap = { 1: "🥇", 2: "🥈", 3: "🥉" };
-      prizesStripHtml = `
-        <div class="raffle-prizes-preview-strip">
-          ${prizes.map(p => `
-            <div class="raffle-prize-preview-item">
-              <span class="prize-place-tag">${medalMap[p.place] || '🏅'} ${p.place} место (Лот ${p.lot_number || p.place}):</span>
-              <span class="prize-title-tag">${p.title}</span>
-            </div>
-          `).join('')}
+      multiLotsHtml = `
+        <div class="card-lots-showcase">
+          ${prizes.map((p) => {
+            const medal = medalMap[p.place] || "🏅";
+            const pImg = p.prize_image_url || mainImg;
+            return `
+              <div class="card-lot-item">
+                <div class="card-lot-item-top">
+                  <span class="card-lot-badge">${medal} ${p.place} место (Лот №${p.lot_number || p.place})</span>
+                  <span class="card-lot-title">${escapeHtml(p.title)}</span>
+                </div>
+                ${p.description ? `<p class="card-lot-desc">${escapeHtml(p.description)}</p>` : ''}
+                <img src="${escapeHtml(pImg)}" class="card-lot-img" alt="${escapeHtml(p.title)}" onerror="this.src='${mainImg}'">
+              </div>
+            `;
+          }).join('')}
         </div>
       `;
     }
 
     card.innerHTML = `
       <div class="raffle-image-wrapper">
-        <img class="raffle-image" src="${mainImg}" alt="${r.title}" onerror="this.src='https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=800&q=80'">
+        <img class="raffle-image" src="${mainImg}" alt="${escapeHtml(r.title)}" onerror="this.src='https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=800&q=80'">
         <div class="raffle-badge-status ${badgeClass}">${badgeText}</div>
         <div class="raffle-lot-badge">${badgeTextLot}</div>
         <div class="raffle-price-tag">${Math.round(r.price_per_ticket)} ₽ / билет</div>
       </div>
       <div class="raffle-card-content">
-        <h2 class="raffle-card-title">${r.title}</h2>
-        ${prizesStripHtml}
-        <p class="raffle-card-desc">${r.description || ""}</p>
+        <h2 class="raffle-card-title">${escapeHtml(r.title)}</h2>
+        <p class="raffle-card-desc">${escapeHtml(r.description || "")}</p>
+        ${multiLotsHtml}
         
         <div class="drawdown-progress-container">
           <div class="drawdown-labels">
@@ -229,6 +247,7 @@
     const thumb = document.getElementById("boardRaffleThumb");
     const title = document.getElementById("boardRaffleTitle");
     const subtitle = document.getElementById("boardRaffleSubtitle");
+    const lotsContainer = document.getElementById("boardLotsContainer");
 
     const prizes = raffle.prizes || [];
     const mainImg = (prizes[0] && prizes[0].prize_image_url) ? prizes[0].prize_image_url : raffle.prize_image_url;
@@ -237,6 +256,28 @@
     if (subtitle) {
       const extra = prizes.length > 1 ? ` • ${prizes.length} призовых мест` : '';
       subtitle.textContent = `Доступно: ${raffle.available_tickets} из ${raffle.total_tickets} шт. • ${Math.round(raffle.price_per_ticket)} ₽ / билет${extra}`;
+    }
+
+    if (lotsContainer) {
+      const medalMap = { 1: "🥇", 2: "🥈", 3: "🥉" };
+      lotsContainer.innerHTML = prizes.map((p) => {
+        const medal = medalMap[p.place] || "🏅";
+        const pImg = p.prize_image_url || mainImg;
+        return `
+          <div class="board-lot-card">
+            <div class="board-lot-header">
+              <span class="board-lot-badge">${medal} ${p.place} место (Лот №${p.lot_number || p.place})</span>
+              <span class="board-lot-title">${escapeHtml(p.title)}</span>
+            </div>
+            <div class="board-lot-body">
+              ${p.description ? `<p class="board-lot-desc">${escapeHtml(p.description)}</p>` : ''}
+              <div class="board-lot-img-wrap">
+                <img src="${escapeHtml(pImg)}" class="board-lot-img" alt="${escapeHtml(p.title)}" onerror="this.src='${mainImg}'">
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
   }
 
@@ -358,6 +399,111 @@
   // ==========================================
   // SBP CHECKOUT & RESERVATION MODAL
   // ==========================================
+  let resBannerInterval = null;
+
+  async function checkActiveReservation() {
+    if (!state.user || !state.user.id) return;
+    try {
+      const res = await fetch(`/api/users/${state.user.id}/active-reservation`);
+      const data = await res.json();
+      if (data.success && data.has_active && data.order) {
+        state.activeOrder = data.order;
+        showReservationBanner(data.order);
+      } else {
+        hideReservationBanner();
+      }
+    } catch (err) {
+      console.warn("Could not check active reservation:", err);
+    }
+  }
+
+  function showReservationBanner(order) {
+    const banner = document.getElementById("activeReservationBanner");
+    const timerEl = document.getElementById("resBannerCountdown");
+    const subEl = document.getElementById("resBannerSubtitle");
+    if (!banner) return;
+
+    banner.classList.remove("hidden");
+    if (subEl) {
+      const tStr = (order.ticket_numbers || []).map((n) => `#${n}`).join(", ");
+      subEl.textContent = `${order.raffle_title} • ${tStr} • ${Math.round(order.amount)} ₽`;
+    }
+
+    clearInterval(resBannerInterval);
+    const target = new Date(order.expires_at).getTime();
+
+    function updateTimer() {
+      const diff = Math.max(0, Math.floor((target - Date.now()) / 1000));
+      const mins = Math.floor(diff / 60);
+      const secs = diff % 60;
+      if (timerEl) {
+        timerEl.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+      }
+      if (diff <= 0) {
+        clearInterval(resBannerInterval);
+        hideReservationBanner();
+        state.activeOrder = null;
+        reloadBoard();
+      }
+    }
+    updateTimer();
+    resBannerInterval = setInterval(updateTimer, 1000);
+
+    const btnResume = document.getElementById("btnResResume");
+    if (btnResume) {
+      btnResume.onclick = () => {
+        openSbpModal(order);
+      };
+    }
+
+    const btnCancel = document.getElementById("btnResCancel");
+    if (btnCancel) {
+      btnCancel.onclick = () => {
+        cancelActiveOrder(order.order_id);
+      };
+    }
+  }
+
+  function hideReservationBanner() {
+    clearInterval(resBannerInterval);
+    const banner = document.getElementById("activeReservationBanner");
+    if (banner) banner.classList.add("hidden");
+  }
+
+  async function cancelActiveOrder(orderId) {
+    if (!orderId && state.activeOrder) {
+      orderId = state.activeOrder.order_id;
+    }
+    if (!orderId) return;
+
+    if (!confirm("Вы действительно хотите снять бронь? Билеты станут доступны всем участникам.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: state.user.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        state.activeOrder = null;
+        clearInterval(state.countdownInterval);
+        clearInterval(state.pollingInterval);
+        document.getElementById("modalSbp")?.classList.remove("active");
+        hideReservationBanner();
+        await reloadBoard();
+        alert("Бронь успешно снята. Билеты возвращены в продажу.");
+      } else {
+        alert(data.detail || data.error || "Не удалось снять бронь");
+      }
+    } catch (err) {
+      console.error("Cancel order error:", err);
+      alert("Ошибка соединения с сервером при снятии брони");
+    }
+  }
+
   function initCheckout() {
     const btnProceed = document.getElementById("btnProceedSbp");
     if (btnProceed) {
@@ -365,7 +511,12 @@
     }
 
     document.getElementById("btnCloseSbpModal")?.addEventListener("click", closeSbpModal);
-    document.getElementById("btnCancelOrder")?.addEventListener("click", closeSbpModal);
+    document.getElementById("btnCancelOrder")?.addEventListener("click", () => {
+      cancelActiveOrder();
+    });
+    document.getElementById("btnCancelReservationInModal")?.addEventListener("click", () => {
+      cancelActiveOrder();
+    });
     document.getElementById("btnSimulateSbpSuccess")?.addEventListener("click", simulateSbpPayment);
     document.getElementById("btnGoToPortfolio")?.addEventListener("click", () => {
       document.getElementById("modalSuccess")?.classList.remove("active");
@@ -398,6 +549,7 @@
       }
 
       state.activeOrder = data;
+      showReservationBanner(data);
       openSbpModal(data);
     } catch (err) {
       console.error("Reservation error:", err);
@@ -406,6 +558,7 @@
   }
 
   function openSbpModal(orderData) {
+    state.activeOrder = orderData;
     document.getElementById("sbpModalRaffleTitle").textContent = orderData.raffle_title;
     document.getElementById("sbpModalTicketNumbers").textContent =
       `Номера билетов: ${orderData.ticket_numbers.map((n) => "#" + n).join(", ")}`;
@@ -438,6 +591,7 @@
     clearInterval(state.countdownInterval);
     clearInterval(state.pollingInterval);
     document.getElementById("modalSbp")?.classList.remove("active");
+    checkActiveReservation();
     reloadBoard();
   }
 
@@ -500,6 +654,8 @@
   }
 
   function onPaymentSuccess(order) {
+    hideReservationBanner();
+    state.activeOrder = null;
     closeSbpModal();
 
     // Trigger celebratory confetti
@@ -649,6 +805,7 @@
     initCheckout();
     initAdminForm();
     initLiveSync();
+    checkActiveReservation();
     loadRaffles();
   });
 })();

@@ -184,3 +184,155 @@ class NotificationService:
 
         logger.info(f"Broadcasted message to {count}/{len(active_chats)} groups")
         return count
+
+    async def broadcast_raffle_announcement(
+        self,
+        raffle: Dict[str, Any],
+        keyboard: Any,
+        pin: bool = True,
+    ) -> int:
+        """
+        Broadcast complete raffle showcase with lot breakdown and photos to all active MAX groups.
+        Posts main announcement with Lot 1 photo and interactive Mini-App keyboard.
+        Posts follow-up photos for Lot 2, Lot 3, etc. so all prizes are fully displayed in chat.
+        """
+        if not self.bot or not self.db:
+            logger.warning("Bot or DB not attached; skipping broadcast.")
+            return 0
+
+        active_chats = await self.db.get_active_chats()
+        if not active_chats:
+            return 0
+
+        prizes = raffle.get("prizes", [])
+        medal_map = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+        prizes_lines = []
+        for p in prizes:
+            pl = p.get("place", 1)
+            lt = p.get("lot_number", pl)
+            t = p.get("title", "")
+            d = p.get("description", "").strip()
+            m = medal_map.get(pl, f"🏅 {pl} место")
+            line = f"{m} **Лот №{lt} ({pl} место)**: {t}"
+            if d:
+                line += f"\n   _{d}_"
+            prizes_lines.append(line)
+
+        prizes_block = "\n".join(prizes_lines) + "\n\n" if prizes_lines else ""
+        creator_line = f"👤 Организатор: **{raffle['creator_name']}**\n" if raffle.get("creator_name") else ""
+
+        main_text = (
+            f"🎁 **Внимание! Новый розыгрыш в BotMAX!**\n\n"
+            f"🎮 **{raffle['title']}**\n\n"
+            f"{creator_line}"
+            f"{raffle.get('description', '')}\n\n"
+            f"🏆 **Призовые места и лоты:**\n"
+            f"{prizes_block}"
+            f"💰 Стоимость 1 билета: **{raffle['price_per_ticket']:.0f} ₽**\n"
+            f"🎫 Всего билетов: **{raffle['total_tickets']} шт.**\n"
+            f"🟢 Доступно сейчас: **{raffle['available_tickets']} шт.**\n\n"
+            f"Мгновенная оплата по СБП в любом банке РФ. Билеты выбывают сразу!\n"
+            f"👇 **Нажмите кнопку ниже, чтобы открыть табло и занять номера:**"
+        )
+
+        # Resolve media for each lot
+        from pathlib import Path
+        async def _resolve_media(img_url: str):
+            if not img_url:
+                return None
+            img_url = img_url.strip()
+            # 1. Local upload check
+            filename = None
+            if img_url.startswith("/static/uploads/"):
+                filename = img_url.replace("/static/uploads/", "")
+            elif "/static/uploads/" in img_url:
+                filename = img_url.split("/static/uploads/")[-1]
+
+            if filename:
+                p = Path("data/uploads") / filename
+                if p.exists():
+                    try:
+                        from maxapi.types.input_media import InputMedia
+                        return InputMedia(path=str(p.resolve()))
+                    except Exception as ie:
+                        logger.warning(f"Failed to create InputMedia for {p}: {ie}")
+
+            # 2. Web URL check
+            if img_url.startswith("http://") or img_url.startswith("https://"):
+                try:
+                    import httpx
+                    async with httpx.AsyncClient(timeout=8.0) as client:
+                        resp = await client.get(img_url)
+                        if resp.status_code == 200 and resp.content:
+                            from maxapi.types.input_media import InputMediaBuffer
+                            return InputMediaBuffer(buffer=resp.content, filename="lot_prize.jpg")
+                except Exception as he:
+                    logger.warning(f"Could not download photo {img_url} for broadcast: {he}")
+
+            return None
+
+        lot_media_list = []
+        for p in prizes:
+            img = p.get("prize_image_url") or raffle.get("prize_image_url")
+            med = await _resolve_media(img) if img else None
+            lot_media_list.append({
+                "place": p.get("place", 1),
+                "lot_number": p.get("lot_number", 1),
+                "title": p.get("title", ""),
+                "description": p.get("description", ""),
+                "media": med,
+            })
+
+        count = 0
+        for grp in active_chats:
+            gid = grp.get("chat_id")
+            if not gid:
+                continue
+            try:
+                # 1. Send Main Message with Lot 1 media (if available) and interactive keyboard
+                main_attachments = []
+                if lot_media_list and lot_media_list[0]["media"]:
+                    main_attachments.append(lot_media_list[0]["media"])
+                if keyboard:
+                    main_attachments.append(keyboard)
+
+                sent = await self.bot.send_message(
+                    chat_id=gid,
+                    text=main_text,
+                    attachments=main_attachments if main_attachments else None,
+                )
+
+                if pin and sent and hasattr(sent, "body") and sent.body and sent.body.mid:
+                    try:
+                        await self.bot.pin_message(chat_id=gid, message_id=sent.body.mid, notify=True)
+                        await self.db.save_chat(chat_id=gid, pinned_message_id=sent.body.mid)
+                    except Exception as pe:
+                        logger.warning(f"Could not pin message in group {gid}: {pe}")
+
+                # 2. If multiple lots, send follow-up photo cards for Lot 2, Lot 3...
+                if len(lot_media_list) > 1:
+                    for lot in lot_media_list[1:]:
+                        medal = medal_map.get(lot["place"], f"🏅 {lot['place']} место")
+                        lot_text = (
+                            f"{medal} **Лот №{lot['lot_number']} ({lot['place']} место) — {lot['title']}**"
+                        )
+                        if lot["description"]:
+                            lot_text += f"\n_{lot['description']}_"
+
+                        lot_att = [lot["media"]] if lot["media"] else None
+                        try:
+                            await self.bot.send_message(
+                                chat_id=gid,
+                                text=lot_text,
+                                attachments=lot_att,
+                            )
+                        except Exception as le:
+                            logger.warning(f"Could not send follow-up lot photo to group {gid}: {le}")
+
+                count += 1
+            except Exception as e:
+                logger.warning(f"Failed to broadcast raffle to group {gid}: {e}")
+
+        logger.info(f"Broadcasted raffle {raffle['id']} to {count}/{len(active_chats)} groups with all lot photos")
+        return count
