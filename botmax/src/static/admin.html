@@ -18,19 +18,19 @@
   <div id="authScreen" class="auth-wrapper">
     <div class="auth-card">
       <div class="auth-shield-glow">
-        <div class="auth-shield-icon">🛡️</div>
+        <div class="auth-shield-icon">🎰</div>
       </div>
-      <h1 class="auth-title">BotMAX Studio</h1>
-      <p class="auth-subtitle">Защищенная панель управления играми и розыгрышами в мессенджере MAX</p>
+      <h1 class="auth-title">BotMAX</h1>
+      <p class="auth-subtitle">Панель управления розыгрышами для организаторов</p>
 
       <form id="loginForm" class="auth-form" onsubmit="return false;">
         <div class="input-group">
-          <label for="adminUsername" class="input-label">Логин</label>
+          <label for="adminUsername" class="input-label">Имя пользователя (Логин)</label>
           <input
             type="text"
             id="adminUsername"
             class="auth-input"
-            placeholder="Введите логин (например, superadmin)..."
+            placeholder="Введите ваш логин..."
             autocomplete="username"
             value="superadmin"
             required
@@ -38,29 +38,48 @@
         </div>
 
         <div class="input-group">
-          <label for="adminPassword" class="input-label">Пароль</label>
+          <label for="adminPassword" class="input-label">Пароль для входа</label>
           <div class="password-field-wrapper">
             <input
               type="password"
               id="adminPassword"
               class="auth-input"
-              placeholder="Введите пароль..."
+              placeholder="Введите ваш пароль..."
               autocomplete="current-password"
               required
             >
-            <button type="button" id="togglePasswordBtn" class="btn-eye" title="Показать/скрыть пароль">👁️</button>
+            <button type="button" id="togglePasswordBtn" class="btn-eye" title="Показать или скрыть пароль">👁️</button>
           </div>
+        </div>
+
+        <div class="remember-group">
+          <label class="remember-label" for="rememberMeCheckbox">
+            <input type="checkbox" id="rememberMeCheckbox" checked>
+            <span>Запомнить меня на этом устройстве</span>
+          </label>
         </div>
 
         <div id="authErrorMsg" class="auth-error-msg hidden"></div>
 
         <button type="submit" id="loginBtn" class="btn-primary auth-submit-btn">
-          <span class="btn-text">Войти в панель</span>
+          <span class="btn-text">Войти в систему</span>
           <span class="btn-spinner hidden"></span>
         </button>
 
+        <div class="auth-extra-actions">
+          <button type="button" id="loginSeniorModeBtn" class="btn-senior-quick" title="Увеличить размер шрифта и кнопок">
+            <span>👓</span> <span class="senior-label-text">Крупный шрифт</span>
+          </button>
+        </div>
+
+        <div class="auth-apk-download">
+          <a href="/apk" download class="link-apk-download" title="Скачать официальное приложение BotMAX для Android">
+            <span>📲</span> Установить приложение на телефон (APK)
+          </a>
+        </div>
+
         <div class="auth-security-note">
-          <span class="lock-mini-icon">🔒</span> Доступ защищен криптографической сессией HMAC. Защита от подбора паролей активна.
+          <span class="lock-mini-icon">🔒</span> Вход только для зарегистрированных администраторов.
         </div>
       </form>
     </div>
@@ -76,21 +95,27 @@
         <div class="logo-box">
           <span class="logo-icon">🎰</span>
           <div class="logo-text">
-            <span class="logo-title">BotMAX Studio</span>
-            <span class="logo-badge">Admin Hub</span>
+            <span class="logo-title">BotMAX</span>
+            <span class="logo-badge">Панель управления</span>
           </div>
         </div>
         <div class="system-status-pill">
           <span class="pulse-dot"></span>
-          <span>Сервер онлайн</span>
+          <span>Система активна</span>
         </div>
       </div>
 
       <div class="nav-right">
         <div id="currentUserPill" class="user-status-pill">
-          <span id="currentUserRoleBadge" class="badge-role-pill">👑 СуперАдмин</span>
-          <span id="currentUserName" class="user-name-text">Главный Администратор</span>
+          <span id="currentUserRoleBadge" class="badge-role-pill">👑 Главный</span>
+          <span id="currentUserName" class="user-name-text">Администратор</span>
         </div>
+        <a href="/apk" download class="btn-apk-nav" title="Скачать приложение BotMAX на Android телефон">
+          <span>📲</span> Скачать APK
+        </a>
+        <button id="seniorModeToggleBtn" class="btn-senior-mode-nav" title="Переключить крупный шрифт и кнопки">
+          <span>👓</span> <span class="senior-toggle-text">Крупный текст</span>
+        </button>
         <button id="openProfileBtn" class="btn-profile-nav" title="Мои реквизиты СБП и профиль">
           <span>⚙️</span> Мой СБП
         </button>
@@ -588,6 +613,30 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="/static/admin.js?v=2.2.0"></script>
+  <!-- Mobile Bottom Navigation Bar (For Phones & Android APK) -->
+  <nav id="mobileBottomNav" class="mobile-bottom-nav">
+    <button id="mbNavGames" class="mb-nav-btn active" title="Список игр">
+      <span class="mb-icon">🎰</span>
+      <span class="mb-text">Игры</span>
+    </button>
+    <button id="mbNavCreate" class="mb-nav-btn mb-nav-btn-accent" title="Создать новую игру">
+      <span class="mb-icon">➕</span>
+      <span class="mb-text">Создать</span>
+    </button>
+    <button id="mbNavSbp" class="mb-nav-btn" title="Мои реквизиты СБП">
+      <span class="mb-icon">💳</span>
+      <span class="mb-text">Мой СБП</span>
+    </button>
+    <button id="mbNavRefresh" class="mb-nav-btn" title="Обновить список">
+      <span class="mb-icon">🔄</span>
+      <span class="mb-text">Обновить</span>
+    </button>
+    <button id="mbNavSenior" class="mb-nav-btn" title="Крупный шрифт для удобного чтения">
+      <span class="mb-icon">👓</span>
+      <span class="mb-text">Шрифт</span>
+    </button>
+  </nav>
+
+  <script src="/static/admin.js?v=2.3.0"></script>
 </body>
 </html>

@@ -185,6 +185,20 @@ def create_app() -> FastAPI:
         """Health check endpoint"""
         return {"status": "ok", "app": "botmax", "version": "2.0.0"}
 
+    # Direct APK Download Endpoint
+    @app.get("/apk")
+    @app.get("/download-apk")
+    async def download_apk():
+        """Direct download endpoint for BotMAX Admin Android APK"""
+        apk_path = STATIC_DIR / "botmax-admin.apk"
+        if apk_path.exists():
+            return FileResponse(
+                str(apk_path),
+                media_type="application/vnd.android.package-archive",
+                filename="BotMAX-Admin.apk",
+            )
+        return HTMLResponse("<h1>Файл APK не найден</h1>", status_code=404)
+
     return app
 
 

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BotMAX Админ</string>
+    <string name="default_server_url">https://anussai.duckdns.org/admin</string>
+    <string name="server_settings_title">Адрес сервера BotMAX</string>
+    <string name="server_settings_hint">https://anussai.duckdns.org/admin</string>
+    <string name="btn_save">Сохранить</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="btn_reset_default">Сбросить</string>
+    <string name="exit_prompt">Нажмите назад еще раз для выхода</string>
+    <string name="loading_text">Загрузка панели управления BotMAX...</string>
+    <string name="offline_text">Нет связи с сервером. Проверьте интернет или адрес сервера.</string>
+    <string name="btn_retry">Повторить попытку</string>
+    <string name="btn_change_server">Сменить сервер</string>
+</resources>

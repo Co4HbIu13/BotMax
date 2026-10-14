@@ -2062,14 +2062,465 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  padding: 4px 10px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 6px 12px;
   border-radius: var(--radius-full);
   margin-bottom: 8px;
   font-weight: 500;
 }
+
+/* ==========================================================================
+   SENIOR / HIGH ACCESSIBILITY MODE & CLEAN INTERFACE ("НИЧЕГО ЛИШНЕГО")
+   ========================================================================== */
+
+/* Remember Me Checkbox on Login */
+.remember-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 14px 0 16px;
+}
+
+.remember-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.auth-extra-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.btn-senior-quick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--accent-blue);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-senior-quick:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.auth-apk-download {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.link-apk-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-green);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 10px 18px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+}
+
+.link-apk-download:hover {
+  background: rgba(16, 185, 129, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-apk-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.btn-apk-nav:hover {
+  background: var(--accent-green);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.btn-senior-mode-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: #c4b5fd;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-senior-mode-nav:hover,
+.btn-senior-mode-nav.active {
+  background: var(--accent-purple);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+}
+
+/* Primary Big Action Buttons on Cards */
+.btn-primary-action-lg {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 18px;
+  background: var(--gradient-green);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  transition: var(--transition);
+  letter-spacing: 0.3px;
+}
+
+.btn-primary-action-lg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+.btn-primary-action-lg:active {
+  transform: translateY(0);
+}
+
+.winner-trophy-badge {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fde68a;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.card-secondary-actions-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-card-action-sub {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.btn-card-action-sub:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-hover);
+}
+
+.btn-card-action-sub.danger {
+  flex: 0 0 44px;
+  color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn-card-action-sub.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--accent-red);
+}
+
+/* ==========================================================================
+   GLOBAL SENIOR / LARGE TEXT ACCESSIBILITY OVERRIDES
+   ========================================================================== */
+body.senior-mode {
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+body.senior-mode .auth-card {
+  max-width: 520px;
+  padding: 44px 36px;
+}
+
+body.senior-mode .auth-title {
+  font-size: 32px;
+}
+
+body.senior-mode .auth-subtitle {
+  font-size: 17px;
+}
+
+body.senior-mode .input-label,
+body.senior-mode .form-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+body.senior-mode .auth-input,
+body.senior-mode .form-input,
+body.senior-mode .form-select,
+body.senior-mode .form-textarea {
+  font-size: 17px;
+  padding: 14px 18px;
+  min-height: 54px;
+  border-width: 2px;
+}
+
+body.senior-mode .btn-primary,
+body.senior-mode .auth-submit-btn {
+  font-size: 18px;
+  min-height: 58px;
+  font-weight: 800;
+  border-radius: var(--radius-lg);
+}
+
+body.senior-mode .metric-card {
+  padding: 22px;
+}
+
+body.senior-mode .metric-label {
+  font-size: 15px;
+}
+
+body.senior-mode .metric-value {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+body.senior-mode .metric-sub {
+  font-size: 14px;
+}
+
+body.senior-mode .section-title {
+  font-size: 24px;
+}
+
+body.senior-mode .status-tab {
+  font-size: 16px;
+  padding: 10px 18px;
+}
+
+body.senior-mode .card-title {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+body.senior-mode .card-price-val {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+body.senior-mode .card-price-label {
+  font-size: 15px;
+}
+
+body.senior-mode .progress-stats-row {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+body.senior-mode .progress-bar-bg {
+  height: 12px;
+}
+
+body.senior-mode .btn-primary-action-lg {
+  min-height: 60px;
+  font-size: 18px;
+}
+
+body.senior-mode .btn-card-action-sub {
+  min-height: 50px;
+  font-size: 15px;
+}
+
+body.senior-mode .chip-btn {
+  padding: 10px 14px;
+  font-size: 16px;
+}
+
+/* ==========================================================================
+   MOBILE & APK BOTTOM NAVIGATION
+   ========================================================================== */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 76px;
+  }
+
+  .dashboard-content {
+    padding: 16px 12px 80px;
+  }
+
+  .dashboard-navbar {
+    padding: 10px 12px;
+  }
+
+  .nav-right .btn-create-nav,
+  .nav-right .btn-profile-nav,
+  .nav-right .btn-action-nav {
+    display: none; /* Relocated to mobile bottom nav for older adults thumb-reach */
+  }
+
+  .user-status-pill {
+    padding: 4px 8px;
+  }
+
+  .user-name-text {
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+  }
+
+  .raffles-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Fixed Bottom Navigation Bar for Android APK */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 68px;
+    background: var(--bg-card-solid);
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mb-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    gap: 2px;
+    min-height: 48px;
+    border-radius: 12px;
+    transition: var(--transition);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mb-nav-btn:active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mb-nav-icon {
+    font-size: 20px;
+  }
+
+  .mb-nav-text {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .mb-nav-btn.active {
+    color: var(--accent-blue);
+  }
+
+  .mb-nav-btn-accent {
+    background: var(--gradient-primary);
+    color: #ffffff !important;
+    border-radius: 14px;
+    transform: translateY(-6px);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.45);
+    padding: 6px 0;
+  }
+
+  .mb-nav-btn-accent .mb-nav-icon {
+    font-size: 22px;
+  }
+
+  .mb-nav-btn-accent .mb-nav-text {
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  body.senior-mode .mobile-bottom-nav {
+    height: 76px;
+  }
+
+  body.senior-mode .mb-nav-icon {
+    font-size: 24px;
+  }
+
+  body.senior-mode .mb-nav-text {
+    font-size: 13px;
+    font-weight: 700;
+  }
+}
+
 
 

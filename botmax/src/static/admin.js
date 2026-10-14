@@ -154,7 +154,7 @@
   }
 
   // ========================================================
-  // THEME SUPPORT
+  // THEME & SENIOR ACCESSIBILITY MODE
   // ========================================================
   function initTheme() {
     const saved = localStorage.getItem("botmax_admin_theme") || "dark";
@@ -162,6 +162,7 @@
     if (themeIcon) {
       themeIcon.textContent = saved === "dark" ? "☀️" : "🌙";
     }
+    initSeniorMode();
   }
 
   function toggleTheme() {
@@ -174,10 +175,41 @@
     }
   }
 
+  function initSeniorMode() {
+    const isSenior = localStorage.getItem("botmax_senior_mode") === "true";
+    if (isSenior) {
+      document.body.classList.add("senior-mode");
+      updateSeniorModeUI(true);
+    }
+  }
+
+  function toggleSeniorMode() {
+    const isNowSenior = document.body.classList.toggle("senior-mode");
+    localStorage.setItem("botmax_senior_mode", isNowSenior ? "true" : "false");
+    updateSeniorModeUI(isNowSenior);
+    showToast(isNowSenior ? "👓 Включен крупный шрифт" : "👓 Стандартный шрифт", "info");
+  }
+
+  function updateSeniorModeUI(isSenior) {
+    const navBtn = document.getElementById("seniorModeToggleBtn");
+    if (navBtn) {
+      navBtn.classList.toggle("active", isSenior);
+    }
+    const mbSenior = document.getElementById("mbNavSenior");
+    if (mbSenior) {
+      mbSenior.classList.toggle("active", isSenior);
+    }
+  }
+
   // ========================================================
   // AUTHENTICATION & PROFILE
   // ========================================================
   async function checkAuthSession() {
+    const rememberedUser = localStorage.getItem("botmax_admin_username");
+    if (rememberedUser && adminUsernameInput) {
+      adminUsernameInput.value = rememberedUser;
+    }
+
     if (!adminToken) {
       showAuthScreen();
       return;
@@ -279,7 +311,14 @@
       const data = await res.json();
       if (res.ok && data.success) {
         adminToken = data.token;
-        localStorage.setItem("botmax_admin_token", adminToken);
+        const rememberCheckbox = document.getElementById("rememberMeCheckbox");
+        if (rememberCheckbox && rememberCheckbox.checked) {
+          localStorage.setItem("botmax_admin_token", adminToken);
+          localStorage.setItem("botmax_admin_username", username);
+        } else {
+          sessionStorage.setItem("botmax_admin_token", adminToken);
+          localStorage.removeItem("botmax_admin_username");
+        }
 
         // Fetch full profile info
         const meRes = await fetch("/api/admin/me", {
@@ -497,13 +536,13 @@
     }
 
     const drawButton = !isCompleted ? `
-      <button class="btn-action-primary" onclick="window.botmaxAdmin.openDrawModal('${r.id}')">
-        <span>🏆</span> Разыграть призы
+      <button class="btn-primary-action-lg" onclick="window.botmaxAdmin.openDrawModal('${r.id}')">
+        <span>🎲</span> ВЫБРАТЬ ПОБЕДИТЕЛЯ
       </button>
     ` : `
-      <button class="btn-action-secondary" disabled style="opacity: 0.6;">
+      <div class="winner-trophy-badge">
         <span>🏆</span> Розыгрыш проведен
-      </button>
+      </div>
     `;
 
     return `
@@ -529,24 +568,26 @@
               <div class="progress-bar-fill" style="width: ${percent}%;"></div>
             </div>
             <div class="progress-stats-row">
-              <span>Продано: <strong>${r.sold_tickets || 0} / ${r.total_tickets}</strong></span>
+              <span>Продано: <strong>${r.sold_tickets || 0} из ${r.total_tickets} билетов</strong></span>
               <span>${percent}%</span>
             </div>
           </div>
 
           ${winnerBanner}
 
-          <div class="card-actions-row">
+          <div class="card-actions-stack">
             ${drawButton}
-            <button class="btn-action-secondary" onclick="window.botmaxAdmin.broadcastRaffle('${r.id}')" title="Опубликовать и закрепить в группах MAX">
-              <span>📢</span> В группы
-            </button>
-            <button class="btn-action-secondary" onclick="window.botmaxAdmin.inspectTickets('${r.id}')">
-              <span>🎫</span> Сетка билетов
-            </button>
-            <button class="btn-action-danger" onclick="window.botmaxAdmin.deleteRaffle('${r.id}')">
-              <span>🗑️</span> Удалить
-            </button>
+            <div class="card-secondary-actions-row">
+              <button class="btn-card-action-sub" onclick="window.botmaxAdmin.inspectTickets('${r.id}')">
+                <span>📋</span> Билеты
+              </button>
+              <button class="btn-card-action-sub" onclick="window.botmaxAdmin.broadcastRaffle('${r.id}')" title="Опубликовать в группах MAX">
+                <span>📢</span> В группу
+              </button>
+              <button class="btn-card-action-sub danger" onclick="window.botmaxAdmin.deleteRaffle('${r.id}')" title="Удалить розыгрыш">
+                <span>🗑️</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1433,6 +1474,46 @@
     closeDrawModalBtn?.addEventListener("click", closeDrawModal);
     closeDrawBtn?.addEventListener("click", closeDrawModal);
     startDrawBtn?.addEventListener("click", executeDrawWinner);
+
+    // Senior Mode Accessibility Buttons
+    document.getElementById("seniorModeToggleBtn")?.addEventListener("click", toggleSeniorMode);
+    document.getElementById("loginSeniorModeBtn")?.addEventListener("click", toggleSeniorMode);
+
+    // Mobile Bottom Navigation Bar (APK & Phone screens)
+    const mbNavGames = document.getElementById("mbNavGames");
+    const mbNavCreate = document.getElementById("mbNavCreate");
+    const mbNavSbp = document.getElementById("mbNavSbp");
+    const mbNavRefresh = document.getElementById("mbNavRefresh");
+    const mbNavSenior = document.getElementById("mbNavSenior");
+
+    mbNavGames?.addEventListener("click", () => {
+      document.querySelectorAll(".mb-nav-btn").forEach(b => b.classList.remove("active"));
+      mbNavGames.classList.add("active");
+      switchMainTab("raffles");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    mbNavCreate?.addEventListener("click", () => {
+      openCreateModal();
+    });
+
+    mbNavSbp?.addEventListener("click", () => {
+      openProfileModal();
+    });
+
+    mbNavRefresh?.addEventListener("click", () => {
+      loadDashboardStats();
+      if (currentMainTab === "admins") {
+        loadAdminsList();
+      } else {
+        loadRaffles();
+      }
+      showToast("Данные обновлены", "info");
+    });
+
+    mbNavSenior?.addEventListener("click", () => {
+      toggleSeniorMode();
+    });
 
     // Tickets Modal
     closeTicketsModalBtn?.addEventListener("click", closeTicketsModal);
