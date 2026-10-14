@@ -730,12 +730,88 @@
     }
   }
 
+  function copyToClipboard(text, btnEl, defaultText = "📋 Скопировать") {
+    if (!btnEl) return;
+    function finish() {
+      btnEl.textContent = "✓ Скопировано!";
+      btnEl.classList.add("copied");
+      setTimeout(() => {
+        btnEl.textContent = defaultText;
+        btnEl.classList.remove("copied");
+      }, 2500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(finish).catch(() => {
+        fallbackCopy(text, finish);
+      });
+    } else {
+      fallbackCopy(text, finish);
+    }
+  }
+
+  function fallbackCopy(text, cb) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+    } catch (_) {}
+    document.body.removeChild(ta);
+    if (cb) cb();
+  }
+
   function openSbpModal(orderData) {
     state.activeOrder = orderData;
-    document.getElementById("sbpModalRaffleTitle").textContent = orderData.raffle_title;
-    document.getElementById("sbpModalTicketNumbers").textContent =
-      `Номера билетов: ${orderData.ticket_numbers.map((n) => "#" + n).join(", ")}`;
-    document.getElementById("sbpModalAmount").textContent = `${orderData.amount} ₽`;
+    const titleEl = document.getElementById("sbpModalRaffleTitle");
+    if (titleEl) titleEl.textContent = orderData.raffle_title || "Розыгрыш призов";
+
+    const ticketsEl = document.getElementById("sbpModalTicketNumbers");
+    if (ticketsEl) {
+      ticketsEl.textContent = `Номера билетов: ${(orderData.ticket_numbers || []).map((n) => "#" + n).join(", ")}`;
+    }
+
+    // Recipient Details
+    const recipientPhone = orderData.recipient?.sbp_phone || "+7 (991) 439-70-85";
+    const recipientBank = orderData.recipient?.sbp_bank || "Т-Банк / Сбербанк";
+    const amountVal = orderData.amount || 0;
+    const orderCode = orderData.order_id || "";
+
+    const phoneEl = document.getElementById("sbpRecipientPhone");
+    if (phoneEl) phoneEl.textContent = recipientPhone;
+
+    const bankEl = document.getElementById("sbpRecipientBank");
+    if (bankEl) bankEl.textContent = recipientBank;
+
+    const amountEl = document.getElementById("sbpTransferAmount");
+    if (amountEl) amountEl.textContent = `${amountVal} ₽`;
+
+    const codeEl = document.getElementById("sbpPaymentCodeText");
+    if (codeEl) codeEl.textContent = orderCode;
+
+    // 1-Click Copy Buttons
+    const btnCopyPhone = document.getElementById("btnCopyRecipientPhone");
+    if (btnCopyPhone) {
+      btnCopyPhone.textContent = "📋 Скопировать";
+      btnCopyPhone.classList.remove("copied");
+      btnCopyPhone.onclick = () => copyToClipboard(recipientPhone.replace(/[^\d+]/g, ""), btnCopyPhone);
+    }
+
+    const btnCopyAmount = document.getElementById("btnCopyTransferAmount");
+    if (btnCopyAmount) {
+      btnCopyAmount.textContent = "📋 Скопировать";
+      btnCopyAmount.classList.remove("copied");
+      btnCopyAmount.onclick = () => copyToClipboard(String(amountVal), btnCopyAmount);
+    }
+
+    const btnCopyCode = document.getElementById("btnCopyPaymentCode");
+    if (btnCopyCode) {
+      btnCopyCode.textContent = "📋 Скопировать";
+      btnCopyCode.classList.remove("copied");
+      btnCopyCode.onclick = () => copyToClipboard(orderCode, btnCopyCode);
+    }
 
     // QR Image
     const qrImg = document.getElementById("sbpQrImage");
@@ -743,11 +819,48 @@
       qrImg.src = orderData.sbp.qr_data_url;
     }
 
-    // Set mobile deep link
+    // Bank detection
+    const isTBank = /т-банк|тинькофф|tbank|tinkoff/i.test(recipientBank);
+    const isSber = /сбер|sber/i.test(recipientBank);
+
+    // Direct T-Bank link button (with pre-filled phone, amount and comment!)
+    const btnTBank = document.getElementById("btnOpenTBank");
+    if (btnTBank) {
+      if (orderData.sbp?.tbank_url && isTBank) {
+        btnTBank.style.display = "flex";
+        btnTBank.onclick = () => {
+          window.location.href = orderData.sbp.tbank_url;
+        };
+      } else {
+        btnTBank.style.display = "none";
+      }
+    }
+
+    // Direct Sberbank button
+    const btnSber = document.getElementById("btnOpenSber");
+    if (btnSber) {
+      if (isSber) {
+        btnSber.style.display = "flex";
+        btnSber.onclick = () => {
+          if (orderData.sbp?.sber_url) {
+            window.location.href = orderData.sbp.sber_url;
+          } else {
+            window.location.href = "sberbank://";
+          }
+        };
+      } else {
+        btnSber.style.display = "none";
+      }
+    }
+
+    // Universal copy & pay button
     const btnApp = document.getElementById("btnOpenBankApp");
     if (btnApp) {
+      const defaultAppBtnText = `📲 Скопировать реквизиты (${recipientBank || "СБП"})`;
+      btnApp.textContent = defaultAppBtnText;
       btnApp.onclick = () => {
-        window.location.href = orderData.sbp?.deep_link || orderData.sbp?.nspk_url;
+        const cleanDigits = recipientPhone.replace(/[^\d+]/g, "");
+        copyToClipboard(cleanDigits, btnApp, defaultAppBtnText);
       };
     }
 

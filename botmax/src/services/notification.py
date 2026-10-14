@@ -10,9 +10,17 @@ logger = logging.getLogger("botmax.notification")
 class NotificationService:
     """Service to deliver transaction alerts and lottery outcomes to MAX Messenger users"""
 
-    def __init__(self, bot: Optional[Bot] = None, db: Optional[Any] = None):
+    def __init__(
+        self,
+        bot: Optional[Bot] = None,
+        db: Optional[Any] = None,
+        admin_ids: Optional[List[int]] = None,
+        mini_app_url: str = "",
+    ):
         self.bot = bot
         self.db = db
+        self.admin_ids = admin_ids or []
+        self.mini_app_url = mini_app_url or "https://anussai.duckdns.org"
 
     def set_bot(self, bot: Bot) -> None:
         """Register active bot instance"""
@@ -21,6 +29,97 @@ class NotificationService:
     def set_db(self, db: Any) -> None:
         """Register database instance for chat broadcasts"""
         self.db = db
+
+    def set_admin_ids(self, admin_ids: List[int]) -> None:
+        """Register target admin MAX user IDs for instant cashier alerts"""
+        self.admin_ids = admin_ids
+
+    async def notify_admin_new_reservation(
+        self,
+        raffle_title: str,
+        buyer_username: str,
+        buyer_user_id: int,
+        buyer_phone: str,
+        ticket_numbers: List[int],
+        amount: float,
+        order_id: str,
+        target_admin_ids: Optional[List[int]] = None,
+        recipient_name: str = "",
+        recipient_phone: str = "",
+        recipient_bank: str = "",
+    ) -> bool:
+        """Notify admin(s) in MAX Bot about a new ticket reservation awaiting confirmation"""
+        if not self.bot:
+            logger.warning("Bot client not attached to NotificationService; skipping admin alert.")
+            return False
+
+        tickets_str = ", ".join(f"#{num}" for num in ticket_numbers)
+        phone_line = f"📞 **Телефон покупателя:** {buyer_phone}\n" if buyer_phone else ""
+        recipient_line = ""
+        if recipient_phone or recipient_bank:
+            recipient_line = f"💳 **Куда переводить:** {recipient_bank} ({recipient_phone}) — {recipient_name}\n"
+
+        cashier_url = f"{self.mini_app_url.rstrip('/')}/admin"
+        text = (
+            f"🔔 **Новый заказ в Кассе! Ожидает оплаты**\n\n"
+            f"🎯 **Игра:** {raffle_title}\n"
+            f"👤 **Покупатель:** @{buyer_username} (ID: {buyer_user_id})\n"
+            f"{phone_line}"
+            f"🎟️ **Билеты:** {tickets_str} ({len(ticket_numbers)} шт.)\n"
+            f"💰 **Сумма к получению:** **{amount:.2f} ₽**\n"
+            f"🧾 **Код перевода:** `{order_id}`\n"
+            f"{recipient_line}"
+            f"⏱️ **Бронь:** 10 минут\n\n"
+            f"👉 После проверки поступления нажмите «Подтвердить оплату» в Кассе:\n"
+            f"🔗 {cashier_url}"
+        )
+
+        sent_any = False
+        bot_id = self.bot.me.user_id if (self.bot.me and hasattr(self.bot.me, "user_id")) else None
+
+        # 1. Collect target admin user IDs from DB and parameters (excluding bot's own user_id)
+        target_ids = set()
+        if self.db:
+            try:
+                db_ids = await self.db.get_admin_max_user_ids()
+                target_ids.update(db_ids)
+            except Exception as e:
+                logger.warning(f"Failed to query admin max_user_ids: {e}")
+
+        for aid in (target_admin_ids or self.admin_ids):
+            if aid and aid != bot_id:
+                target_ids.add(int(aid))
+
+        # 2. Deliver DMs to admin MAX accounts
+        for uid in target_ids:
+            if uid == bot_id:
+                continue
+            try:
+                await self.bot.send_message(user_id=uid, text=text)
+                logger.info(f"Delivered cashier reservation alert to admin DM {uid}")
+                sent_any = True
+            except Exception as e:
+                logger.warning(f"Could not deliver cashier alert to admin {uid} (dialog not started yet): {e}")
+
+        # 3. Deliver alert to active connected group chats / channels
+        # Group messages are always delivered and wake up organizers on their phones!
+        if self.db:
+            try:
+                active_chats = await self.db.get_active_chats()
+                for c in active_chats:
+                    cid = c.get("chat_id")
+                    if not cid:
+                        continue
+                    try:
+                        await self.bot.send_message(chat_id=cid, text=text)
+                        logger.info(f"Delivered cashier reservation alert to group chat {cid}")
+                        sent_any = True
+                    except Exception as ch_err:
+                        logger.warning(f"Could not send cashier alert to chat {cid}: {ch_err}")
+            except Exception as e:
+                logger.warning(f"Failed to broadcast cashier alert to active chats: {e}")
+
+        return sent_any
 
     async def notify_ticket_purchase(
         self,

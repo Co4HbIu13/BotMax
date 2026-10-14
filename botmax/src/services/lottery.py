@@ -83,6 +83,9 @@ class LotteryService:
             order_id=order_id,
             amount_rub=total_amount,
             purpose=purpose,
+            recipient_phone=raffle.get("creator_sbp_phone", ""),
+            recipient_bank=raffle.get("creator_sbp_bank", "СБП"),
+            custom_qr_url=raffle.get("creator_sbp_qr_url", ""),
         )
 
         # 3. Create Order record routed to raffle creator
@@ -100,6 +103,25 @@ class LotteryService:
             recipient_admin_id=creator_admin_id,
             phone=phone or "",
         )
+
+        # 4. Trigger alert to Admin in MAX Bot (safe asynchronous task)
+        try:
+            asyncio.create_task(
+                self.notification_service.notify_admin_new_reservation(
+                    raffle_title=raffle["title"],
+                    buyer_username=username,
+                    buyer_user_id=user_id,
+                    buyer_phone=phone or "",
+                    ticket_numbers=ticket_numbers,
+                    amount=total_amount,
+                    order_id=order_id,
+                    recipient_name=raffle.get("creator_name", "Главный Администратор"),
+                    recipient_phone=raffle.get("creator_sbp_phone", ""),
+                    recipient_bank=raffle.get("creator_sbp_bank", "СБП"),
+                )
+            )
+        except Exception as e:
+            logger.warning(f"Failed to queue admin cashier notification: {e}")
 
         return {
             "success": True,
@@ -236,10 +258,16 @@ class LotteryService:
         if not order:
             return None
 
-        # Build SBP data payload with QR
-        qr_data_url = self.sbp_service.generate_qr_code_data_url(order["sbp_pay_url"])
-        sum_kopecks = int(round(order["amount"] * 100))
-        deep_link = f"sbp://qr.nspk.ru/{order['sbp_qrid']}?type=02&sum={sum_kopecks}&cur=RUB"
+        # Build full SBP data payload with working QR and direct bank links
+        purpose = f"Оплата билетов #{','.join(map(str, order['ticket_numbers']))} ({order.get('raffle_title', '')[:30]})"
+        sbp_data = self.sbp_service.create_payment_payload(
+            order_id=order["id"],
+            amount_rub=order["amount"],
+            purpose=purpose,
+            recipient_phone=order.get("creator_sbp_phone", ""),
+            recipient_bank=order.get("creator_sbp_bank", "СБП"),
+            custom_qr_url=order.get("creator_sbp_qr_url", ""),
+        )
 
         return {
             "order_id": order["id"],
@@ -249,12 +277,7 @@ class LotteryService:
             "ticket_count": len(order["ticket_numbers"]),
             "amount": order["amount"],
             "expires_at": order["expires_at"],
-            "sbp": {
-                "qrid": order["sbp_qrid"],
-                "nspk_url": order["sbp_pay_url"],
-                "deep_link": deep_link,
-                "qr_data_url": qr_data_url,
-            },
+            "sbp": sbp_data,
             "recipient": {
                 "display_name": order.get("creator_name", "Главный Администратор"),
                 "sbp_phone": order.get("creator_sbp_phone", ""),

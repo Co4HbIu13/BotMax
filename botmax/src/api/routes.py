@@ -51,6 +51,10 @@ class SBPWebhookPayload(BaseModel):
     amount: Optional[float] = None
 
 
+class CashierConfirmRequest(BaseModel):
+    order_id: str
+
+
 class AdminLoginRequest(BaseModel):
     username: Optional[str] = "superadmin"
     password: str
@@ -70,6 +74,8 @@ class UpdateAdminProfileRequest(BaseModel):
     sbp_phone: Optional[str] = None
     sbp_bank: Optional[str] = None
     password: Optional[str] = None
+    max_user_id: Optional[int] = None
+    sbp_qr_url: Optional[str] = None
 
 
 class UploadImageRequest(BaseModel):
@@ -347,6 +353,58 @@ def setup_routes(
         return result
 
     # ==========================================
+    # 1.1 CASHIER: 1-CLICK ORDER CONFIRMATION
+    # ==========================================
+    @api_router.get("/admin/cashier/orders")
+    async def get_cashier_orders(current_admin: Dict[str, Any] = Depends(require_admin)):
+        """
+        Cashier endpoint: returns all pending reservations with ticket numbers, amount,
+        buyer information, and recent paid orders for 1-click confirmation.
+        """
+        admin_id = current_admin["id"] if current_admin.get("role") != "superadmin" else None
+        pending = await db.get_cashier_pending_orders(admin_id=admin_id)
+        recent_paid = await db.get_cashier_recent_payments(admin_id=admin_id, limit=30)
+        return {
+            "success": True,
+            "pending": pending,
+            "recent_paid": recent_paid,
+            "pending_count": len(pending),
+        }
+
+    @api_router.post("/admin/cashier/confirm")
+    async def cashier_confirm_payment(
+        req: CashierConfirmRequest, current_admin: Dict[str, Any] = Depends(require_admin)
+    ):
+        """
+        1-Click Confirmation: Marks order as paid, triggers ticket drawdown to 'sold',
+        and sends instant success push notification to buyer in MAX messenger.
+        """
+        order = await db.get_order(req.order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail=f"Заказ {req.order_id} не найден")
+
+        result = await lottery_service.complete_sbp_payment(req.order_id)
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Ошибка подтверждения оплаты"))
+        return result
+
+    @api_router.post("/admin/cashier/cancel")
+    async def cashier_cancel_reservation(
+        req: CashierConfirmRequest, current_admin: Dict[str, Any] = Depends(require_admin)
+    ):
+        """
+        1-Click Cancellation: Releases reserved tickets back to the available pool.
+        """
+        order = await db.get_order(req.order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail=f"Заказ {req.order_id} не найден")
+
+        result = await lottery_service.cancel_reservation(req.order_id, is_admin=True)
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Не удалось отменить бронь"))
+        return result
+
+    # ==========================================
     # 2. ADMIN AUTHENTICATION & PROFILE ENDPOINTS
     # ==========================================
     @api_router.post("/admin/auth/login")
@@ -398,6 +456,8 @@ def setup_routes(
             sbp_phone=req.sbp_phone,
             sbp_bank=req.sbp_bank,
             password=req.password,
+            max_user_id=req.max_user_id,
+            sbp_qr_url=req.sbp_qr_url,
         )
         updated = await db.get_admin_by_id(current_admin["id"])
         return {"success": True, "admin": updated, "message": "Профиль и реквизиты СБП обновлены"}

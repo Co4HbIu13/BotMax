@@ -238,6 +238,24 @@ def register_handlers(
                 await bot.send_message(chat_id=chat_id, text=welcome_text, attachments=[kb])
 
         # ------------------------------------------
+        # /admin, /cashier, /myid (Connect Admin & Cashier Notifications)
+        # ------------------------------------------
+        elif cmd in ["admin", "cashier", "админ", "касса"]:
+            await db.set_admin_max_user_id(max_user_id=user_id)
+            admin_msg = (
+                f"👑 **Вы успешно подключены как администратор BotMAX!**\n\n"
+                f"✅ Ваш MAX User ID: `{user_id}` привязан к уведомлениям кассы.\n"
+                f"Теперь при каждом заказе бот будет присылать вам мгновенные оповещения прямо сюда в личные сообщения!\n\n"
+                f"🔗 Панель администратора: {config.mini_app_url}/admin"
+            )
+            await bot.send_message(chat_id=chat_id, text=admin_msg)
+            return
+
+        elif cmd in ["myid", "id"]:
+            await bot.send_message(chat_id=chat_id, text=f"🆔 Ваш MAX User ID: `{user_id}`")
+            return
+
+        # ------------------------------------------
         # /post, /showcase, /pin (Publish and Pin Showcase in Group)
         # ------------------------------------------
         elif cmd in ["post", "showcase", "pin"]:
@@ -340,33 +358,7 @@ def register_handlers(
             kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id)
             await bot.send_message(chat_id=chat_id, text=help_text, attachments=[kb])
 
-        # ------------------------------------------
-        # /admin
-        # ------------------------------------------
-        elif cmd == "admin":
-            if user_id not in config.admin_ids:
-                await bot.send_message(chat_id=chat_id, text="⛔ Доступ к панели администратора ограничен.")
-                return
 
-            raffles = await lottery_service.get_active_raffles()
-            active_chats = await db.get_active_chats()
-            total_revenue = sum(r["sold_tickets"] * r["price_per_ticket"] for r in raffles)
-            total_sold = sum(r["sold_tickets"] for r in raffles)
-
-            admin_text = (
-                f"👑 **Панель администратора BotMAX**\n\n"
-                f"📊 **Общая статистика:**\n"
-                f"• Всего розыгрышей: {len(raffles)}\n"
-                f"• Продано билетов: {total_sold} шт.\n"
-                f"• Оборот СБП: {total_revenue:,.2f} ₽\n"
-                f"• Подключенных групп/каналов: {len(active_chats)}\n\n"
-                f"Веб-панель управления (в браузере):\n"
-                f"🔗 {config.mini_app_url}/admin\n\n"
-                f"Команды администратора в чате:\n"
-                f"`/post` — опубликовать и закрепить витрину в текущей группе\n"
-                f"`/draw <raffle_id>` — досрочно провести розыгрыш и объявить победителя\n"
-            )
-            await bot.send_message(chat_id=chat_id, text=admin_text)
 
         # ------------------------------------------
         # /draw <raffle_id>

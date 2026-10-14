@@ -135,12 +135,15 @@
     </header>
 
     <main class="dashboard-content">
-      <!-- Main Navigation Tabs for SuperAdmin -->
-      <div id="superadminNavTabs" class="main-nav-tabs hidden">
+      <!-- Main Navigation Tabs -->
+      <div id="mainNavTabs" class="main-nav-tabs">
         <button id="tabShowRaffles" class="main-nav-tab active">
           <span>🎰</span> Игры и розыгрыши
         </button>
-        <button id="tabShowAdmins" class="main-nav-tab">
+        <button id="tabShowCashier" class="main-nav-tab">
+          <span>💳</span> Касса (<span id="cashierPendingCount">0</span>)
+        </button>
+        <button id="tabShowAdmins" class="main-nav-tab hidden">
           <span>👥</span> Управление организаторами (<span id="countAdminsNav">0</span>)
         </button>
       </div>
@@ -212,6 +215,68 @@
           <h3>Нет созданных розыгрышей</h3>
           <p>Нажмите кнопку «Создать игру», чтобы добавить первый приз!</p>
           <button id="emptyCreateBtn" class="btn-primary mt-3">➕ Создать первую игру</button>
+        </div>
+      </section>
+
+      <!-- Section: Cashier & 1-Click Payments -->
+      <section id="cashierSection" class="section-card hidden">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <h2 class="section-title">Касса: Бронь и подтверждение оплат</h2>
+            <p class="section-desc">Когда участник переводит оплату — нажмите кнопку «Подтвердить оплату» в 1 клик для зачисления билетов.</p>
+          </div>
+          <div class="cashier-header-actions">
+            <button id="cashierSoundToggleBtn" class="btn-sound-toggle" title="Включить / выключить звуковой сигнал при новом заказе">
+              <span id="cashierSoundIcon">🔔</span> <span id="cashierSoundText">Звук: Вкл</span>
+            </button>
+            <div class="live-indicator-pill">
+              <span class="pulse-dot"></span>
+              <span>Авто-обновление 5с</span>
+            </div>
+            <button id="refreshCashierBtn" class="btn-refresh" title="Обновить список заказов">🔄 Обновить</button>
+          </div>
+        </div>
+
+        <!-- Pending Orders (Awaiting confirmation) -->
+        <div class="cashier-block">
+          <h3 class="cashier-block-title">
+            <span>⏳</span> Ожидают подтверждения (<span id="cashierPendingHeaderCount">0</span>)
+          </h3>
+          <div id="cashierPendingList" class="cashier-orders-grid">
+            <!-- Dynamically populated cards -->
+          </div>
+          <div id="emptyCashierPending" class="empty-state hidden">
+            <div class="empty-icon">🎉</div>
+            <h3>Нет ожидающих оплат</h3>
+            <p>Все забронированные билеты подтверждены или свободны для покупки.</p>
+          </div>
+        </div>
+
+        <!-- Recent Paid Orders History -->
+        <div class="cashier-block cashier-history-block">
+          <h3 class="cashier-block-title">
+            <span>✅</span> Недавно подтвержденные оплаты (История)
+          </h3>
+          <div class="payments-table-wrap">
+            <table class="payments-table">
+              <thead>
+                <tr>
+                  <th>Время оплаты</th>
+                  <th>Участник</th>
+                  <th>Сумма</th>
+                  <th>Розыгрыш</th>
+                  <th>Билеты</th>
+                  <th>Заказ</th>
+                </tr>
+              </thead>
+              <tbody id="cashierPaidTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+          <div id="emptyCashierPaid" class="empty-state hidden">
+            <p style="padding: 16px; color: var(--text-tertiary);">История оплаченных заказов пуста.</p>
+          </div>
         </div>
       </section>
 
@@ -594,6 +659,24 @@
         </div>
 
         <div class="form-group mb-3">
+          <label class="form-label" for="profileMaxUserId">
+            Ваш цифровой MAX ID для мгновенных уведомлений
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="profileMaxUserId" class="form-input" placeholder="например: 916217">
+          </div>
+          <span class="form-hint">Напишите команду <code>/myid</code> или <code>/admin</code> боту в личные сообщения, чтобы бот присылал заказы вам на телефон.</span>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label" for="profileSbpQrUrl">
+            Прямая ссылка / QR СБП из приложения банка (необязательно)
+          </label>
+          <input type="text" id="profileSbpQrUrl" class="form-input" placeholder="например: ссылка из Т-Банка или Сбера">
+          <span class="form-hint">Если указана, будет использоваться для генерации QR-кода оплаты</span>
+        </div>
+
+        <div class="form-group mb-3">
           <label class="form-label" for="profileNewPassword">Новый пароль (оставьте пустым, если не меняете)</label>
           <input type="password" id="profileNewPassword" class="form-input" placeholder="Новый пароль..." autocomplete="new-password">
         </div>
@@ -622,17 +705,18 @@
       <span class="mb-icon">🎰</span>
       <span class="mb-text">Игры</span>
     </button>
+    <button id="mbNavCashier" class="mb-nav-btn" title="Касса и подтверждение оплат">
+      <span class="mb-icon">💳</span>
+      <span class="mb-text">Касса</span>
+      <span id="mbCashierBadge" class="mb-badge hidden">0</span>
+    </button>
     <button id="mbNavCreate" class="mb-nav-btn mb-nav-btn-accent" title="Создать новую игру">
       <span class="mb-icon">➕</span>
       <span class="mb-text">Создать</span>
     </button>
     <button id="mbNavSbp" class="mb-nav-btn" title="Мои реквизиты СБП">
-      <span class="mb-icon">💳</span>
-      <span class="mb-text">Мой СБП</span>
-    </button>
-    <button id="mbNavRefresh" class="mb-nav-btn" title="Обновить список">
-      <span class="mb-icon">🔄</span>
-      <span class="mb-text">Обновить</span>
+      <span class="mb-icon">⚙️</span>
+      <span class="mb-text">СБП</span>
     </button>
     <button id="mbNavSenior" class="mb-nav-btn" title="Крупный шрифт для удобного чтения">
       <span class="mb-icon">👓</span>

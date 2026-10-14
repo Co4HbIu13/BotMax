@@ -2082,7 +2082,7 @@ html, body {
 }
 
 /* ==========================================================================
-   SENIOR / HIGH ACCESSIBILITY MODE & CLEAN INTERFACE ("НИЧЕГО ЛИШНЕГО")
+   HIGH ACCESSIBILITY & LARGE TEXT MODE ("НИЧЕГО ЛИШНЕГО")
    ========================================================================== */
 
 /* Remember Me Checkbox on Login */
@@ -2664,6 +2664,367 @@ body.senior-mode .chip-btn {
     font-size: 13px;
     font-weight: 700;
   }
+}
+
+/* ========================================================
+   CASHIER & 1-CLICK PAYMENTS SECTION STYLES
+   ======================================================== */
+.cashier-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.live-indicator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: var(--accent-green);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  animation: pulse-border 1.5s infinite;
+}
+
+.cashier-block {
+  margin-top: 20px;
+}
+
+.cashier-block-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cashier-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.cashier-card {
+  background: var(--bg-card);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  position: relative;
+}
+
+.cashier-card:hover {
+  border-color: rgba(245, 158, 11, 0.8);
+  transform: translateY(-2px);
+}
+
+.cashier-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cashier-buyer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cashier-buyer-badge {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cashier-maxid {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: monospace;
+}
+
+.buyer-phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  text-decoration: none;
+  background: rgba(59, 130, 246, 0.12);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+  margin-top: 2px;
+  transition: background 0.15s ease;
+}
+
+.buyer-phone-link:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.cashier-amount-badge {
+  font-size: 22px;
+  font-weight: 900;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cashier-order-details {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.detail-value {
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-tickets {
+  font-weight: 700;
+  color: #38bdf8;
+  text-align: right;
+  word-break: break-all;
+}
+
+.cashier-timer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cashier-timer-val {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-orange);
+}
+
+.cashier-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-cashier-confirm {
+  width: 100%;
+  min-height: 48px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  transition: all 0.15s ease;
+}
+
+.btn-cashier-confirm:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-cashier-confirm:active {
+  transform: scale(0.98);
+}
+
+.btn-cashier-cancel {
+  width: 100%;
+  min-height: 38px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cashier-cancel:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.cashier-history-block {
+  margin-top: 36px;
+}
+
+.payments-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  margin-top: 14px;
+}
+
+.payments-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.payments-table th {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 16px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.payments-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 14px;
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.payments-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.payment-order-code {
+  font-family: monospace;
+  font-weight: 700;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Large Text Mode Enhancements */
+body.senior-mode .cashier-buyer-badge {
+  font-size: 18px;
+}
+body.senior-mode .cashier-amount-badge {
+  font-size: 26px;
+}
+body.senior-mode .btn-cashier-confirm {
+  min-height: 56px;
+  font-size: 17px;
+}
+body.senior-mode .cashier-timer-val {
+  font-size: 18px;
+}
+body.senior-mode .detail-row {
+  font-size: 15px;
+}
+
+/* Sound Toggle & Active Cashier Badge Alert */
+.btn-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--accent-blue);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-sound-toggle:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+.btn-sound-toggle.muted {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-subtle);
+  color: var(--text-tertiary);
+}
+
+.mb-badge {
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.pulse-badge {
+  animation: badge-pulse-anim 1.5s infinite;
+}
+@keyframes badge-pulse-anim {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 

@@ -198,7 +198,6 @@
       <div class="modal-body">
         <div id="sbpModalRaffleTitle" style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">--</div>
         <div id="sbpModalTicketNumbers" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Билеты: --</div>
-        <div id="sbpModalAmount" style="font-size: 26px; font-weight: 800; color: var(--accent-blue); margin-bottom: 8px;">0 ₽</div>
 
         <div class="countdown-box">
           <span>⏱️</span>
@@ -206,26 +205,64 @@
           <span id="sbpCountdownDisplay">10:00</span>
         </div>
 
-        <div>
-          <div class="sbp-qr-container">
-            <img id="sbpQrImage" class="sbp-qr-img" src="" alt="QR-код СБП">
+        <!-- 1. Карточка реквизитов СБП перевода по номеру телефона -->
+        <div class="sbp-transfer-details-card">
+          <div class="transfer-detail-item">
+            <span class="detail-title">📞 Телефон получателя (СБП):</span>
+            <div class="detail-value-row">
+              <strong id="sbpRecipientPhone" class="detail-phone">+7...</strong>
+              <button id="btnCopyRecipientPhone" class="btn-copy-chip" type="button">📋 Скопировать</button>
+            </div>
+          </div>
+
+          <div class="transfer-detail-item">
+            <span class="detail-title">🏦 Банк получателя:</span>
+            <div class="detail-value-row">
+              <strong id="sbpRecipientBank" class="detail-bank">Т-Банк / Сбербанк</strong>
+            </div>
+          </div>
+
+          <div class="transfer-detail-item">
+            <span class="detail-title">💰 Точная сумма к оплате:</span>
+            <div class="detail-value-row">
+              <strong id="sbpTransferAmount" class="detail-amount">0 ₽</strong>
+              <button id="btnCopyTransferAmount" class="btn-copy-chip" type="button">📋 Скопировать</button>
+            </div>
+          </div>
+
+          <div class="transfer-detail-item highlight-item">
+            <span class="detail-title">📝 Сообщение получателю (код заказа):</span>
+            <div class="detail-value-row">
+              <code id="sbpPaymentCodeText" class="code-value">ord_...</code>
+              <button id="btnCopyPaymentCode" class="btn-copy-chip" type="button">📋 Скопировать</button>
+            </div>
+            <div class="code-hint">✨ Обязательно вставьте этот код в сообщение перевода, чтобы организатор сразу узнал ваш платеж!</div>
           </div>
         </div>
 
-        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
-          Отсканируйте камерой смартфона или нажмите кнопку ниже:
+        <!-- 2. Кнопки быстрого открытия банковских приложений -->
+        <div class="sbp-action-buttons">
+          <button id="btnOpenTBank" class="btn-bank-direct btn-tbank" style="display: none;">
+            🟡 Открыть Т-Банк (номер и сумма уже вбиты)
+          </button>
+          <button id="btnOpenSber" class="btn-bank-direct btn-sber" style="display: none;">
+            🟢 Открыть СберБанк Онлайн
+          </button>
+          <button id="btnOpenBankApp" class="btn-open-bank-app">
+            📲 Оплатить через СБП
+          </button>
         </div>
 
-        <div class="sbp-banks-row">
-          <span class="bank-chip">СберБанк</span>
-          <span class="bank-chip">Т-Банк</span>
-          <span class="bank-chip">ВТБ</span>
-          <span class="bank-chip">Альфа-Банк</span>
+        <!-- 3. QR-код для перевода -->
+        <div class="sbp-qr-wrapper">
+          <div class="qr-explanation-note">
+            💡 <strong>На этом смартфоне:</strong> скопируйте номер телефона выше кнопкой 📋 и переведите в приложении своего банка через СБП.<br>
+            📷 <strong>Со второго телефона:</strong> наведите обычную камеру смартфона на QR-код ниже:
+          </div>
+          <div class="sbp-qr-container">
+            <img id="sbpQrImage" class="sbp-qr-img" src="" alt="QR-код для перевода">
+          </div>
         </div>
-
-        <button id="btnOpenBankApp" class="btn-open-bank-app">
-          📲 Оплатить в приложении банка (СБП)
-        </button>
 
         <button id="btnSimulateSbpSuccess" class="btn-simulate-payment">
           ⚡ Симуляция успешной оплаты (Тест СБП)

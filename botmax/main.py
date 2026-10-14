@@ -114,7 +114,9 @@ def create_app() -> FastAPI:
     sbp_service = SBPService(
         merchant_id=config.sbp_merchant_id, secret_key=config.sbp_secret_key
     )
-    notification_service = NotificationService(db=db)
+    notification_service = NotificationService(
+        db=db, admin_ids=config.admin_ids, mini_app_url=config.mini_app_url
+    )
     lottery_service = LotteryService(
         db=db,
         sbp_service=sbp_service,

@@ -5,7 +5,7 @@ import hashlib
 import json
 import logging
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
 
@@ -72,10 +72,20 @@ class Database:
                     role TEXT DEFAULT 'admin', -- 'superadmin', 'admin'
                     sbp_phone TEXT DEFAULT '',
                     sbp_bank TEXT DEFAULT 'СБП',
+                    max_user_id INTEGER DEFAULT NULL,
+                    sbp_qr_url TEXT DEFAULT '',
                     is_active INTEGER DEFAULT 1,
                     created_at TEXT NOT NULL
                 )
             """)
+            try:
+                await cur.execute("ALTER TABLE admins ADD COLUMN max_user_id INTEGER DEFAULT NULL")
+            except Exception:
+                pass
+            try:
+                await cur.execute("ALTER TABLE admins ADD COLUMN sbp_qr_url TEXT DEFAULT ''")
+            except Exception:
+                pass
 
             # 1. Raffles (Розыгрыши призов / Лоты)
             await cur.execute("""
@@ -318,7 +328,7 @@ class Database:
         conn = await self.connect()
         async with conn.cursor() as cur:
             await cur.execute("""
-                SELECT id, username, display_name, role, sbp_phone, sbp_bank, is_active, created_at
+                SELECT id, username, display_name, role, sbp_phone, sbp_bank, is_active, created_at, max_user_id, sbp_qr_url
                 FROM admins
                 ORDER BY CASE WHEN role = 'superadmin' THEN 0 ELSE 1 END, created_at ASC
             """)
@@ -357,8 +367,10 @@ class Database:
         sbp_phone: Optional[str] = None,
         sbp_bank: Optional[str] = None,
         password: Optional[str] = None,
+        max_user_id: Optional[int] = None,
+        sbp_qr_url: Optional[str] = None,
     ) -> bool:
-        """Update organizer display name, SBP payout details or password"""
+        """Update organizer display name, SBP payout details, notifications MAX ID, QR URL or password"""
         conn = await self.connect()
         async with conn.cursor() as cur:
             updates = []
@@ -372,6 +384,12 @@ class Database:
             if sbp_bank is not None:
                 updates.append("sbp_bank = ?")
                 params.append(sbp_bank.strip())
+            if max_user_id is not None:
+                updates.append("max_user_id = ?")
+                params.append(max_user_id)
+            if sbp_qr_url is not None:
+                updates.append("sbp_qr_url = ?")
+                params.append(sbp_qr_url.strip())
             if password:
                 pw_hash, salt = self.hash_password(password)
                 updates.append("password_hash = ?")
@@ -405,6 +423,25 @@ class Database:
             await conn.commit()
             logger.info(f"Deleted admin {admin_id}. Reassigned games to superadmin.")
             return True
+
+    async def get_admin_max_user_ids(self) -> List[int]:
+        """Fetch all registered MAX messenger user IDs of administrators for push alerts"""
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT max_user_id FROM admins WHERE max_user_id IS NOT NULL AND max_user_id != 0")
+            rows = await cur.fetchall()
+            return [int(r[0]) for r in rows if r[0]]
+
+    async def set_admin_max_user_id(self, max_user_id: int, admin_id: Optional[str] = None) -> None:
+        """Link administrator profile to their MAX messenger user ID"""
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            if admin_id:
+                await cur.execute("UPDATE admins SET max_user_id = ? WHERE id = ?", (max_user_id, admin_id))
+            else:
+                await cur.execute("UPDATE admins SET max_user_id = ? WHERE role = 'superadmin'", (max_user_id,))
+            await conn.commit()
+            logger.info(f"Updated admin max_user_id to {max_user_id}")
 
     # ==========================================
     # CHAT / GROUP OPERATIONS
@@ -617,6 +654,7 @@ class Database:
                        COALESCE(a.username, 'superadmin') as creator_username,
                        COALESCE(a.sbp_phone, '') as creator_sbp_phone,
                        COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank,
+                       COALESCE(a.sbp_qr_url, '') as creator_sbp_qr_url,
                        COALESCE(u.phone, '') as winner_phone
                 FROM raffles r
                 LEFT JOIN admins a ON r.creator_admin_id = a.id
@@ -659,7 +697,8 @@ class Database:
                    COALESCE(a.display_name, 'Главный Администратор') as creator_name,
                    COALESCE(a.username, 'superadmin') as creator_username,
                    COALESCE(a.sbp_phone, '') as creator_sbp_phone,
-                   COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank
+                   COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank,
+                   COALESCE(a.sbp_qr_url, '') as creator_sbp_qr_url
             FROM raffles r
             LEFT JOIN admins a ON r.creator_admin_id = a.id
         """
@@ -1126,7 +1165,8 @@ class Database:
                        r.price_per_ticket,
                        COALESCE(a.display_name, 'Главный Администратор') as creator_name,
                        COALESCE(a.sbp_phone, '') as creator_sbp_phone,
-                       COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank
+                       COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank,
+                       COALESCE(a.sbp_qr_url, '') as creator_sbp_qr_url
                 FROM orders o
                 LEFT JOIN raffles r ON o.raffle_id = r.id
                 LEFT JOIN admins a ON o.recipient_admin_id = a.id
@@ -1261,4 +1301,86 @@ class Database:
             "user_id": winner_user_id,
             "username": winner_username,
         }])
+
+    # ==========================================
+    # CASHIER & PAYMENTS MANAGEMENT
+    # ==========================================
+    async def get_cashier_pending_orders(
+        self, admin_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all active pending reservations for Cashier 1-click confirmation.
+        Includes ticket numbers, amount, buyer nickname/phone, and raffle title.
+        """
+        now_iso = utc_now_iso()
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            query = """
+                SELECT o.*,
+                       r.title as raffle_title,
+                       COALESCE(u.phone, o.phone) as buyer_phone,
+                       COALESCE(u.username, o.username) as buyer_username
+                FROM orders o
+                LEFT JOIN raffles r ON o.raffle_id = r.id
+                LEFT JOIN users u ON o.user_id = u.user_id
+                WHERE o.status = 'pending' AND o.expires_at > ?
+            """
+            params: List[Any] = [now_iso]
+            if admin_id and admin_id != "admin_super":
+                query += " AND o.recipient_admin_id = ?"
+                params.append(admin_id)
+
+            query += " ORDER BY o.created_at DESC"
+            await cur.execute(query, params)
+            rows = await cur.fetchall()
+
+            result = []
+            for r in rows:
+                item = dict(r)
+                try:
+                    item["ticket_numbers"] = json.loads(item["ticket_numbers"])
+                except Exception:
+                    pass
+                result.append(item)
+            return result
+
+    async def get_cashier_recent_payments(
+        self, admin_id: Optional[str] = None, limit: int = 30
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recently confirmed and paid orders for Cashier history feed.
+        """
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            query = """
+                SELECT o.*,
+                       r.title as raffle_title,
+                       COALESCE(u.phone, o.phone) as buyer_phone,
+                       COALESCE(u.username, o.username) as buyer_username
+                FROM orders o
+                LEFT JOIN raffles r ON o.raffle_id = r.id
+                LEFT JOIN users u ON o.user_id = u.user_id
+                WHERE o.status = 'paid'
+            """
+            params: List[Any] = []
+            if admin_id and admin_id != "admin_super":
+                query += " AND o.recipient_admin_id = ?"
+                params.append(admin_id)
+
+            query += " ORDER BY o.paid_at DESC LIMIT ?"
+            params.append(limit)
+
+            await cur.execute(query, params)
+            rows = await cur.fetchall()
+
+            result = []
+            for r in rows:
+                item = dict(r)
+                try:
+                    item["ticket_numbers"] = json.loads(item["ticket_numbers"])
+                except Exception:
+                    pass
+                result.append(item)
+            return result
+
 

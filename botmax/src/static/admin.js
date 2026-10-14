@@ -37,13 +37,27 @@
   const currentUserName = document.getElementById("currentUserName");
   const openProfileBtn = document.getElementById("openProfileBtn");
 
-  // SuperAdmin Tabs & Sections
-  const superadminNavTabs = document.getElementById("superadminNavTabs");
+  // Navigation Tabs & Sections
+  const mainNavTabs = document.getElementById("mainNavTabs") || document.getElementById("superadminNavTabs");
   const tabShowRaffles = document.getElementById("tabShowRaffles");
+  const tabShowCashier = document.getElementById("tabShowCashier");
+  const cashierPendingCount = document.getElementById("cashierPendingCount");
   const tabShowAdmins = document.getElementById("tabShowAdmins");
   const countAdminsNav = document.getElementById("countAdminsNav");
   const rafflesSection = document.getElementById("rafflesSection");
   const rafflesSectionDesc = document.getElementById("rafflesSectionDesc");
+  const cashierSection = document.getElementById("cashierSection");
+  const cashierPendingHeaderCount = document.getElementById("cashierPendingHeaderCount");
+  const cashierPendingList = document.getElementById("cashierPendingList");
+  const emptyCashierPending = document.getElementById("emptyCashierPending");
+  const cashierPaidTableBody = document.getElementById("cashierPaidTableBody");
+  const emptyCashierPaid = document.getElementById("emptyCashierPaid");
+  const refreshCashierBtn = document.getElementById("refreshCashierBtn");
+  const cashierSoundToggleBtn = document.getElementById("cashierSoundToggleBtn");
+  const cashierSoundIcon = document.getElementById("cashierSoundIcon");
+  const cashierSoundText = document.getElementById("cashierSoundText");
+  const mbNavCashier = document.getElementById("mbNavCashier");
+  const mbCashierBadge = document.getElementById("mbCashierBadge");
   const adminsSection = document.getElementById("adminsSection");
   const adminsListContainer = document.getElementById("adminsListContainer");
   const emptyAdminsState = document.getElementById("emptyAdminsState");
@@ -133,6 +147,8 @@
   const profileDisplayName = document.getElementById("profileDisplayName");
   const profileSbpPhone = document.getElementById("profileSbpPhone");
   const profileSbpBank = document.getElementById("profileSbpBank");
+  const profileMaxUserId = document.getElementById("profileMaxUserId");
+  const profileSbpQrUrl = document.getElementById("profileSbpQrUrl");
   const profileNewPassword = document.getElementById("profileNewPassword");
   const profileSuccessMsg = document.getElementById("profileSuccessMsg");
 
@@ -143,6 +159,7 @@
   // ========================================================
   function init() {
     initTheme();
+    updateCashierSoundUI();
     checkAuthSession();
     bindEvents();
   }
@@ -154,7 +171,7 @@
   }
 
   // ========================================================
-  // THEME & SENIOR ACCESSIBILITY MODE
+  // THEME & LARGE TEXT ACCESSIBILITY MODE
   // ========================================================
   function initTheme() {
     const saved = localStorage.getItem("botmax_admin_theme") || "dark";
@@ -239,6 +256,8 @@
     adminApp.classList.add("hidden");
   }
 
+  let cashierPollInterval = null;
+
   function showDashboard() {
     authScreen.classList.add("hidden");
     adminApp.classList.remove("hidden");
@@ -246,6 +265,15 @@
     applyRoleUI();
     loadDashboardStats();
     loadRaffles();
+    loadCashierData();
+
+    if (!cashierPollInterval) {
+      cashierPollInterval = setInterval(() => {
+        if (adminToken && !adminApp.classList.contains("hidden")) {
+          loadCashierData();
+        }
+      }, 5000);
+    }
 
     if (currentAdmin && currentAdmin.role === "superadmin") {
       loadAdminsList();
@@ -270,16 +298,18 @@
     }
 
     if (currentAdmin.role === "superadmin") {
-      if (superadminNavTabs) superadminNavTabs.classList.remove("hidden");
+      if (tabShowAdmins) tabShowAdmins.classList.remove("hidden");
       if (rafflesSectionDesc) {
         rafflesSectionDesc.textContent = "Просмотр и управление играми всех организаторов платформы";
       }
     } else {
-      if (superadminNavTabs) superadminNavTabs.classList.add("hidden");
+      if (tabShowAdmins) tabShowAdmins.classList.add("hidden");
       if (rafflesSectionDesc) {
         rafflesSectionDesc.textContent = "Ваши личные игры и розыгрыши. Все средства за билеты поступают на ваш СБП";
       }
-      switchMainTab("raffles");
+      if (currentMainTab === "admins") {
+        switchMainTab("raffles");
+      }
     }
   }
 
@@ -356,6 +386,10 @@
         method: "POST",
         headers: { "Authorization": `Bearer ${adminToken}` },
       }).catch(() => {});
+      if (cashierPollInterval) {
+        clearInterval(cashierPollInterval);
+        cashierPollInterval = null;
+      }
       localStorage.removeItem("botmax_admin_token");
       adminToken = "";
       currentAdmin = null;
@@ -374,24 +408,353 @@
   }
 
   // ========================================================
-  // MAIN NAVIGATION TABS (SUPERADMIN: RAFFLES vs ADMINS)
+  // MAIN NAVIGATION TABS (RAFFLES vs CASHIER vs ADMINS)
   // ========================================================
   function switchMainTab(tabName) {
     currentMainTab = tabName;
+    tabShowRaffles?.classList.toggle("active", tabName === "raffles");
+    tabShowCashier?.classList.toggle("active", tabName === "cashier");
+    tabShowAdmins?.classList.toggle("active", tabName === "admins");
+
+    rafflesSection?.classList.toggle("hidden", tabName !== "raffles");
+    cashierSection?.classList.toggle("hidden", tabName !== "cashier");
+    adminsSection?.classList.toggle("hidden", tabName !== "admins");
+
+    document.getElementById("mbNavGames")?.classList.toggle("active", tabName === "raffles");
+    document.getElementById("mbNavCashier")?.classList.toggle("active", tabName === "cashier");
+
     if (tabName === "admins") {
-      tabShowRaffles?.classList.remove("active");
-      tabShowAdmins?.classList.add("active");
-      rafflesSection?.classList.add("hidden");
-      adminsSection?.classList.remove("hidden");
       loadAdminsList();
+    } else if (tabName === "cashier") {
+      loadCashierData();
     } else {
-      tabShowAdmins?.classList.remove("active");
-      tabShowRaffles?.classList.add("active");
-      adminsSection?.classList.add("hidden");
-      rafflesSection?.classList.remove("hidden");
       loadRaffles();
     }
   }
+
+  // ========================================================
+  // CASHIER: 1-CLICK CONFIRMATION & ORDER MANAGEMENT
+  // ========================================================
+  let cashierCountdownInterval = null;
+  let soundEnabled = localStorage.getItem("botmax_sound_enabled") !== "false";
+  let previousPendingOrderIds = new Set();
+  let hasInitializedCashierOrders = false;
+
+  function playCashierChime() {
+    if (!soundEnabled) return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+      const now = ctx.currentTime;
+
+      // Note 1 (E5: 659.25 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.28, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.45);
+
+      // Note 2 (B5: 987.77 Hz - classic crisp cash chime)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(987.77, now + 0.12);
+      gain2.gain.setValueAtTime(0.32, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.75);
+    } catch (e) {
+      console.warn("Audio chime notice:", e);
+    }
+  }
+
+  function triggerAdminVibration() {
+    try {
+      if ("vibrate" in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    } catch (_) {}
+  }
+
+  function triggerWebNotification(title, body) {
+    try {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, {
+          body: body,
+          icon: "/static/favicon.ico"
+        });
+      }
+    } catch (_) {}
+  }
+
+  function updateCashierSoundUI() {
+    if (!cashierSoundToggleBtn) return;
+    cashierSoundToggleBtn.classList.toggle("muted", !soundEnabled);
+    if (cashierSoundIcon) cashierSoundIcon.textContent = soundEnabled ? "🔔" : "🔕";
+    if (cashierSoundText) cashierSoundText.textContent = soundEnabled ? "Звук: Вкл" : "Звук: Выкл";
+  }
+
+  function toggleCashierSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem("botmax_sound_enabled", soundEnabled ? "true" : "false");
+    updateCashierSoundUI();
+    if (soundEnabled) {
+      playCashierChime();
+      showToast("🔔 Звуковой сигнал о новых заказах включен", "success");
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    } else {
+      showToast("🔕 Звуковой сигнал выключен", "info");
+    }
+  }
+
+  async function loadCashierData() {
+    try {
+      const res = await fetch("/api/admin/cashier/orders", {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+      if (res.status === 401) {
+        showAuthScreen();
+        return;
+      }
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const count = data.pending_count || 0;
+      const pendingList = data.pending || [];
+
+      // Update badge counts and pulse alerts
+      if (cashierPendingCount) {
+        cashierPendingCount.textContent = count;
+        cashierPendingCount.classList.toggle("pulse-badge", count > 0);
+      }
+      if (cashierPendingHeaderCount) cashierPendingHeaderCount.textContent = count;
+
+      if (mbCashierBadge) {
+        mbCashierBadge.textContent = count;
+        mbCashierBadge.classList.toggle("hidden", count === 0);
+        mbCashierBadge.classList.toggle("pulse-badge", count > 0);
+      }
+
+      // Check for new incoming reservations
+      const currentIds = new Set(pendingList.map(o => o.id));
+      if (hasInitializedCashierOrders) {
+        const newOrders = pendingList.filter(o => !previousPendingOrderIds.has(o.id));
+        if (newOrders.length > 0) {
+          playCashierChime();
+          triggerAdminVibration();
+          const latest = newOrders[0];
+          const buyerName = latest.buyer_username || latest.username || `user_${latest.user_id}`;
+          showToast(`🔔 Новый заказ на ${latest.amount} ₽ от @${buyerName}! Ожидает подтверждения в Кассе`, "info");
+          triggerWebNotification("BotMAX: Новый заказ в Кассе!", `Покупатель @${buyerName}: ${latest.amount} ₽ (${(latest.ticket_numbers || []).length} билетов). Нажмите для подтверждения.`);
+        }
+      } else {
+        hasInitializedCashierOrders = true;
+      }
+      previousPendingOrderIds = currentIds;
+
+      renderCashierPending(pendingList);
+      renderCashierHistory(data.recent_paid || []);
+    } catch (err) {
+      console.error("Failed to load cashier orders", err);
+    }
+  }
+
+  function renderCashierPending(orders) {
+    if (!cashierPendingList) return;
+
+    clearInterval(cashierCountdownInterval);
+
+    if (!orders || orders.length === 0) {
+      cashierPendingList.innerHTML = "";
+      if (emptyCashierPending) emptyCashierPending.classList.remove("hidden");
+      return;
+    }
+    if (emptyCashierPending) emptyCashierPending.classList.add("hidden");
+
+    cashierPendingList.innerHTML = orders.map(o => {
+      const buyerName = o.buyer_username || o.username || `user_${o.user_id}`;
+      const phoneHtml = o.buyer_phone ? `<a href="tel:${escapeHtml(o.buyer_phone)}" class="buyer-phone-link">📞 ${escapeHtml(o.buyer_phone)}</a>` : "";
+      const ticketsStr = (o.ticket_numbers || []).map(n => "#" + n).join(", ");
+      const countStr = o.ticket_count ? `${o.ticket_count} шт.` : "";
+
+      return `
+        <div class="cashier-card" id="cashierCard_${escapeHtml(o.id)}">
+          <div class="cashier-card-top">
+            <div class="cashier-buyer-info">
+              <span class="cashier-buyer-badge">👤 @${escapeHtml(buyerName)}</span>
+              <span class="cashier-maxid">MAX ID: ${escapeHtml(String(o.user_id))}</span>
+              ${phoneHtml}
+            </div>
+            <div class="cashier-amount-badge">${escapeHtml(String(o.amount))} ₽</div>
+          </div>
+
+          <div class="cashier-order-details">
+            <div class="detail-row">
+              <span class="detail-label">🎯 Розыгрыш:</span>
+              <strong class="detail-value">${escapeHtml(o.raffle_title || o.raffle_id)}</strong>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">🎟️ Билеты:</span>
+              <span class="detail-tickets">${ticketsStr} (${countStr})</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">📝 Код платежа:</span>
+              <code class="payment-order-code">${escapeHtml(o.id)}</code>
+            </div>
+          </div>
+
+          <div class="cashier-timer-row">
+            <span>⏱️ Время на оплату:</span>
+            <span class="cashier-timer-val" data-expires="${escapeHtml(o.expires_at || '')}">--:--</span>
+          </div>
+
+          <div class="cashier-card-actions">
+            <button class="btn-cashier-confirm" onclick="window.BotMaxAdmin.confirmCashierPayment('${escapeHtml(o.id)}', ${o.amount}, '${escapeHtml(buyerName)}')">
+              ✅ Подтвердить оплату (${o.amount} ₽)
+            </button>
+            <button class="btn-cashier-cancel" onclick="window.BotMaxAdmin.cancelCashierReservation('${escapeHtml(o.id)}')">
+              ✕ Снять бронь
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    startCashierTimers();
+  }
+
+  function startCashierTimers() {
+    function updateTimers() {
+      const now = Date.now();
+      document.querySelectorAll(".cashier-timer-val").forEach(el => {
+        const expStr = el.getAttribute("data-expires");
+        if (!expStr) return;
+        const target = new Date(expStr).getTime();
+        const diff = Math.max(0, Math.floor((target - now) / 1000));
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        el.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        if (diff <= 60) {
+          el.style.color = "var(--accent-red)";
+        } else {
+          el.style.color = "var(--accent-orange)";
+        }
+      });
+    }
+    updateTimers();
+    cashierCountdownInterval = setInterval(updateTimers, 1000);
+  }
+
+  function renderCashierHistory(paidOrders) {
+    if (!cashierPaidTableBody) return;
+
+    if (!paidOrders || paidOrders.length === 0) {
+      cashierPaidTableBody.innerHTML = "";
+      if (emptyCashierPaid) emptyCashierPaid.classList.remove("hidden");
+      return;
+    }
+    if (emptyCashierPaid) emptyCashierPaid.classList.add("hidden");
+
+    cashierPaidTableBody.innerHTML = paidOrders.map(o => {
+      const paidAtStr = o.paid_at ? new Date(o.paid_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : "--";
+      const buyerName = o.buyer_username || o.username || `user_${o.user_id}`;
+      const ticketsStr = (o.ticket_numbers || []).map(n => "#" + n).join(", ");
+
+      return `
+        <tr>
+          <td style="white-space: nowrap; font-size: 13px; color: var(--text-secondary);">${paidAtStr}</td>
+          <td>
+            <strong>@${escapeHtml(buyerName)}</strong>
+            <div style="font-size: 11px; color: var(--text-tertiary);">ID: ${escapeHtml(String(o.user_id))}</div>
+          </td>
+          <td style="font-size: 15px; font-weight: 800; color: var(--accent-green); white-space: nowrap;">+${o.amount} ₽</td>
+          <td style="font-size: 13px;">${escapeHtml(o.raffle_title || o.raffle_id)}</td>
+          <td><span class="detail-tickets" style="font-size: 12px;">${ticketsStr}</span></td>
+          <td><code class="payment-order-code" style="font-size: 11px;">${escapeHtml(o.id)}</code></td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // 1-Click Payment Confirmation Action
+  async function confirmCashierPayment(orderId, amount, buyerName) {
+    try {
+      const res = await fetch("/api/admin/cashier/confirm", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${adminToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ order_id: orderId })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.detail || data.error || "Ошибка подтверждения оплаты", "error");
+        return;
+      }
+
+      showToast(`🎉 Оплата ${amount} ₽ подтверждена! Билеты зачислены за @${buyerName}`, "success");
+      if (window.BotMaxAndroid && typeof window.BotMaxAndroid.vibrate === "function") {
+        window.BotMaxAndroid.vibrate(60);
+      }
+
+      loadCashierData();
+      loadDashboardStats();
+    } catch (err) {
+      console.error("Error confirming payment", err);
+      showToast("Ошибка соединения при подтверждении оплаты", "error");
+    }
+  }
+
+  // 1-Click Reservation Cancellation Action
+  async function cancelCashierReservation(orderId) {
+    if (!confirm(`Снять бронь по заказу ${orderId}? Билеты будут возвращены в свободную продажу.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/cashier/cancel", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${adminToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ order_id: orderId })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.detail || data.error || "Не удалось отменить бронь", "error");
+        return;
+      }
+
+      showToast(`Бронь по заказу ${orderId} снята. Билеты свободны.`, "info");
+      loadCashierData();
+      loadDashboardStats();
+    } catch (err) {
+      console.error("Error cancelling reservation", err);
+      showToast("Ошибка при отмене брони", "error");
+    }
+  }
+
+  // Expose cashier actions globally for onclick handlers
+  window.BotMaxAdmin = window.BotMaxAdmin || {};
+  window.BotMaxAdmin.confirmCashierPayment = confirmCashierPayment;
+  window.BotMaxAdmin.cancelCashierReservation = cancelCashierReservation;
 
   // ========================================================
   // DASHBOARD DATA FETCHING
@@ -785,6 +1148,8 @@
     if (profileDisplayName) profileDisplayName.value = currentAdmin.display_name || "";
     if (profileSbpPhone) profileSbpPhone.value = currentAdmin.sbp_phone || "";
     if (profileSbpBank) profileSbpBank.value = currentAdmin.sbp_bank || "Т-Банк";
+    if (profileMaxUserId) profileMaxUserId.value = currentAdmin.max_user_id || "";
+    if (profileSbpQrUrl) profileSbpQrUrl.value = currentAdmin.sbp_qr_url || "";
     if (profileNewPassword) profileNewPassword.value = "";
     if (profileSuccessMsg) profileSuccessMsg.classList.add("hidden");
 
@@ -799,6 +1164,8 @@
     const displayName = profileDisplayName.value.trim();
     const sbpPhone = profileSbpPhone.value.trim();
     const sbpBank = profileSbpBank.value.trim();
+    const maxUserIdRaw = profileMaxUserId ? profileMaxUserId.value.trim() : "";
+    const sbpQrUrl = profileSbpQrUrl ? profileSbpQrUrl.value.trim() : "";
     const newPassword = profileNewPassword.value.trim();
 
     saveProfileBtn.disabled = true;
@@ -809,6 +1176,11 @@
     if (displayName) payload.display_name = displayName;
     if (sbpPhone !== undefined) payload.sbp_phone = sbpPhone;
     if (sbpBank !== undefined) payload.sbp_bank = sbpBank;
+    if (maxUserIdRaw) {
+      const parsed = parseInt(maxUserIdRaw, 10);
+      if (!isNaN(parsed) && parsed > 0) payload.max_user_id = parsed;
+    }
+    if (sbpQrUrl !== undefined) payload.sbp_qr_url = sbpQrUrl;
     if (newPassword) payload.password = newPassword;
 
     try {
@@ -1483,9 +1855,30 @@
     closeProfileBtn?.addEventListener("click", closeProfileModal);
     saveProfileBtn?.addEventListener("click", handleSaveProfileSubmit);
 
-    // SuperAdmin Navigation Tabs
+    // Main Navigation Tabs
     tabShowRaffles?.addEventListener("click", () => switchMainTab("raffles"));
+    tabShowCashier?.addEventListener("click", () => switchMainTab("cashier"));
     tabShowAdmins?.addEventListener("click", () => switchMainTab("admins"));
+    refreshCashierBtn?.addEventListener("click", () => loadCashierData());
+
+    // Auto-polling for cashier every 5 seconds when logged in
+    setInterval(() => {
+      if (adminToken && !authScreen.classList.contains("hidden")) {
+        // user logged in
+        if (currentMainTab === "cashier") {
+          loadCashierData();
+        } else {
+          // just update badge count
+          fetch("/api/admin/cashier/orders", {
+            headers: { "Authorization": `Bearer ${adminToken}` }
+          }).then(r => r.json()).then(data => {
+            if (cashierPendingCount && data.pending_count !== undefined) {
+              cashierPendingCount.textContent = data.pending_count;
+            }
+          }).catch(() => {});
+        }
+      }
+    }, 5000);
 
     // Admin Creation Modal (SuperAdmin)
     openCreateAdminModalBtn?.addEventListener("click", openCreateAdminModal);
@@ -1563,8 +1956,12 @@
     document.getElementById("seniorModeToggleBtn")?.addEventListener("click", toggleSeniorMode);
     document.getElementById("loginSeniorModeBtn")?.addEventListener("click", toggleSeniorMode);
 
+    // Cashier Sound Alert Toggle
+    cashierSoundToggleBtn?.addEventListener("click", toggleCashierSound);
+
     // Mobile Bottom Navigation Bar (APK & Phone screens)
     const mbNavGames = document.getElementById("mbNavGames");
+    const mbNavCashier = document.getElementById("mbNavCashier");
     const mbNavCreate = document.getElementById("mbNavCreate");
     const mbNavSbp = document.getElementById("mbNavSbp");
     const mbNavRefresh = document.getElementById("mbNavRefresh");
@@ -1574,6 +1971,13 @@
       document.querySelectorAll(".mb-nav-btn").forEach(b => b.classList.remove("active"));
       mbNavGames.classList.add("active");
       switchMainTab("raffles");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    mbNavCashier?.addEventListener("click", () => {
+      document.querySelectorAll(".mb-nav-btn").forEach(b => b.classList.remove("active"));
+      mbNavCashier.classList.add("active");
+      switchMainTab("cashier");
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
