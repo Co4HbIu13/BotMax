@@ -26,10 +26,11 @@
       </div>
       <div class="header-actions">
         <button id="themeToggleBtn" class="icon-btn" title="Переключить тему" aria-label="Сменить тему">🌙</button>
-        <div id="userBadge" class="user-badge" title="Пользователь">
-          <span>👤</span>
+        <button id="userProfileBtn" class="user-badge" title="Нажмите, чтобы настроить ваш Никнейм для розыгрышей">
+          <span>🎭</span>
           <span id="userNameDisplay">Участник</span>
-        </div>
+          <span class="user-badge-pencil">✏️</span>
+        </button>
       </div>
     </header>
 
@@ -259,6 +260,73 @@
         <button id="btnGoToPortfolio" class="btn-select-tickets">
           Посмотреть в «Моих билетах»
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: PARTICIPANT PROFILE & NICKNAME
+       ========================================== -->
+  <div id="modalParticipantProfile" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-title-icon">🎭</span>
+          <div>
+            <h3 class="modal-title">Ваш никнейм для розыгрышей</h3>
+            <p class="modal-subtitle">Имя для объявления победы и вручения призов</p>
+          </div>
+        </div>
+        <button id="btnCloseProfileModal" class="btn-close-x" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="profile-privacy-note">
+          <div class="note-icon">🔒</div>
+          <div class="note-text">
+            <strong>Для вашей приватности и анонимности:</strong><br>
+            В списках победителей 1, 2, 3 места будет опубликован только этот Никнейм! Он гарантирует вашу анонимность. Ник должен быть уникальным!
+          </div>
+        </div>
+
+        <form id="participantProfileForm" onsubmit="return false;" style="margin-top: 14px;">
+          <div class="form-group mb-3">
+            <label class="form-label" for="inputParticipantNickname">Ваш Никнейм (псевдоним) *</label>
+            <div class="input-with-prefix">
+              <span class="input-prefix">@</span>
+              <input
+                type="text"
+                id="inputParticipantNickname"
+                class="form-input"
+                placeholder="например: СчастливыйКот или Удачливый777"
+                maxlength="30"
+                required
+                autocomplete="nickname"
+              >
+            </div>
+            <span class="form-hint">От 3 до 30 символов. Используется для объявления призов.</span>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label" for="inputParticipantPhone">
+              Номер телефона <span style="font-weight: 400; color: var(--text-secondary);">(необязательно)</span>
+            </label>
+            <input
+              type="tel"
+              id="inputParticipantPhone"
+              class="form-input"
+              placeholder="+7 (999) 123-45-67"
+              autocomplete="tel"
+            >
+            <span class="form-hint">Указывается по желанию. Поможет организатору связаться с вами для вручения приза.</span>
+          </div>
+
+          <div id="participantProfileError" class="auth-error-msg hidden mb-3"></div>
+
+          <button id="btnSaveParticipantProfile" type="submit" class="btn-primary-action-lg" style="width: 100%; margin-top: 8px;">
+            <span>💾</span> Сохранить никнейм
+          </button>
+        </form>
       </div>
     </div>
   </div>

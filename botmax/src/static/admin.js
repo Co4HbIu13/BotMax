@@ -521,7 +521,7 @@
         winnerBanner = `
           <div class="winner-banner">
             ${prizes.map(p => `
-              <div>${medalMap[p.place] || '🏅'} ${p.place}м (${escapeHtml(p.title)}): <strong>#${p.winner_ticket_number}</strong> — @${escapeHtml(p.winner_username || "участник")}</div>
+              <div>${medalMap[p.place] || '🏅'} ${p.place}м (${escapeHtml(p.title)}): <strong>#${p.winner_ticket_number}</strong> — @${escapeHtml(p.winner_username || "участник")} ${p.winner_phone ? `<a href="tel:${escapeHtml(p.winner_phone)}" style="color:var(--accent-green);margin-left:6px;text-decoration:none;">📞 ${escapeHtml(p.winner_phone)}</a>` : ''}</div>
             `).join('')}
           </div>
         `;
@@ -529,7 +529,7 @@
         winnerBanner = `
           <div class="winner-banner">
             <span>🏆</span>
-            <div>Победитель: <strong>#${r.winner_ticket_number}</strong> — @${escapeHtml(r.winner_username || "участник")}</div>
+            <div>Победитель: <strong>#${r.winner_ticket_number}</strong> — @${escapeHtml(r.winner_username || "участник")} ${r.winner_phone ? `<a href="tel:${escapeHtml(r.winner_phone)}" style="color:var(--accent-green);margin-left:6px;text-decoration:none;">📞 ${escapeHtml(r.winner_phone)}</a>` : ''}</div>
           </div>
         `;
       }
@@ -1220,7 +1220,7 @@
               <div class="winner-place-card">
                 <div class="winner-place-info">
                   <span class="winner-place-title">${medalMap[w.place] || `🏅 ${w.place} место`} (Лот №${w.lot_number} — ${escapeHtml(w.prize_title)})</span>
-                  <span class="winner-place-sub">Победитель: <strong>@${escapeHtml(w.username || 'участник')}</strong> (ID: ${w.user_id})</span>
+                  <span class="winner-place-sub">Победитель: <strong>@${escapeHtml(w.username || 'участник')}</strong> (ID: ${w.user_id}) ${w.phone ? `<a href="tel:${escapeHtml(w.phone)}" style="color:var(--accent-green);margin-left:8px;font-weight:600;text-decoration:none;">📞 ${escapeHtml(w.phone)}</a>` : ''}</span>
                 </div>
                 <div class="winner-place-ticket-pill">Билет #${w.ticket_number}</div>
               </div>
@@ -1295,7 +1295,7 @@
                   <div class="pending-res-row">
                     <div class="pending-res-info">
                       <span class="pending-res-tickets">Билеты: <b>${o.ticket_numbers.map(n => '#' + n).join(', ')}</b></span>
-                      <span class="pending-res-user">Участник: <b>@${escapeHtml(o.username || o.user_id)}</b></span>
+                      <span class="pending-res-user">Участник: <b>@${escapeHtml(o.username || o.user_id)}</b> <span style="font-size:11px;color:var(--text-dim);">(ID: ${o.user_id})</span> ${o.phone ? `<a href="tel:${escapeHtml(o.phone)}" class="user-phone-link" style="color:var(--accent-green);font-weight:600;margin-left:6px;text-decoration:none;">📞 ${escapeHtml(o.phone)}</a>` : ''}</span>
                       <span class="pending-res-sum">Сумма: <b>${Math.round(o.amount)} ₽</b></span>
                     </div>
                     <button type="button" class="btn-action-release-res" onclick="window.botmaxAdmin.releaseReservation('${o.id}', '${raffleId}')" title="Снять бронь и вернуть билеты в продажу">
@@ -1348,15 +1348,16 @@
     ticketsInspectGrid.innerHTML = tickets.map(t => {
       let statusClass = "t-avail";
       let statusTitle = "Свободен";
+      const phoneSuffix = t.phone ? ` (${t.phone})` : "";
       if (t.status === "winner") {
         statusClass = "t-win";
-        statusTitle = `🏆 Победитель: @${t.username || t.user_id}`;
+        statusTitle = `🏆 Победитель: @${t.username || t.user_id} (ID: ${t.user_id})${phoneSuffix}`;
       } else if (t.status === "sold") {
         statusClass = "t-sold";
-        statusTitle = `Куплен: @${t.username || t.user_id}`;
+        statusTitle = `Куплен: @${t.username || t.user_id} (ID: ${t.user_id})${phoneSuffix}`;
       } else if (t.status === "reserved") {
         statusClass = "t-res";
-        statusTitle = `Бронь: @${t.username || t.user_id}`;
+        statusTitle = `Бронь: @${t.username || t.user_id} (ID: ${t.user_id})${phoneSuffix}`;
       }
 
       return `

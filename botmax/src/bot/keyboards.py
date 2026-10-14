@@ -1,10 +1,11 @@
 """Inline keyboards for MAX Messenger Bot (In-App Mini-App & Native Buttons Only)"""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
 from maxapi.types import (
     CallbackButton,
     OpenAppButton,
+    LinkButton,
 )
 
 
@@ -12,6 +13,8 @@ def main_menu_keyboard(
     mini_app_url: str = "",
     bot_username: str = "se14443050_bot",
     bot_id: int = 471249415,
+    user_id: Optional[int] = None,
+    username: Optional[str] = None,
 ) -> Any:
     """Main menu keyboard with Mini App launch directly inside MAX"""
     builder = InlineKeyboardBuilder()
@@ -22,8 +25,18 @@ def main_menu_keyboard(
             text="🎰 Открыть лотерею (Мини-апп)",
             web_app=bot_username,
             contact_id=bot_id,
+            payload=f"uid_{user_id}" if user_id else None,
         )
     )
+
+    if mini_app_url and user_id:
+        clean_url = f"{mini_app_url.rstrip('/')}/?user_id={user_id}&username={username or ''}"
+        builder.row(
+            LinkButton(
+                text="🌐 Открыть в браузере",
+                url=clean_url,
+            )
+        )
 
     # In-chat quick actions
     builder.row(

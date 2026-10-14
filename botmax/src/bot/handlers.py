@@ -153,6 +153,8 @@ def register_handlers(
             mini_app_url=config.mini_app_url,
             bot_username=bot_username,
             bot_id=bot_id,
+            user_id=user_id,
+            username=username,
         )
 
         await bot.send_message(
@@ -232,7 +234,7 @@ def register_handlers(
                     f"Все билеты убывают из продажи в реальном времени.\n\n"
                     f"Выберите действие:"
                 )
-                kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id)
+                kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id, user_id=user_id, username=username)
                 await bot.send_message(chat_id=chat_id, text=welcome_text, attachments=[kb])
 
         # ------------------------------------------
@@ -407,9 +409,12 @@ def register_handlers(
         payload = event.callback.payload or ""
         logger.info(f"Received callback payload: {payload}")
         bot_username, bot_id = _get_bot_info()
+        cb_user = getattr(event.callback, "user", None)
+        cb_uid = getattr(cb_user, "user_id", None)
+        cb_uname = getattr(cb_user, "username", "")
 
         if payload == "action:main_menu":
-            kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id)
+            kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id, user_id=cb_uid, username=cb_uname)
             await event.answer(
                 new_text="👋 **Главное меню BotMAX**\n\nВыберите действие ниже:",
                 attachments=[kb],
@@ -432,7 +437,7 @@ def register_handlers(
         elif payload == "action:my_tickets":
             user_id = event.callback.user.user_id
             tickets = await db.get_user_tickets(user_id)
-            kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id)
+            kb = main_menu_keyboard(config.mini_app_url, bot_username, bot_id, user_id=cb_uid, username=cb_uname)
             if not tickets:
                 await event.answer(
                     notification="У вас пока нет купленных билетов",

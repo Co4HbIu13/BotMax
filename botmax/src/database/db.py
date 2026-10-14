@@ -178,6 +178,10 @@ class Database:
                 await cur.execute("ALTER TABLE orders ADD COLUMN recipient_admin_id TEXT DEFAULT 'admin_super'")
             except Exception:
                 pass
+            try:
+                await cur.execute("ALTER TABLE orders ADD COLUMN phone TEXT DEFAULT ''")
+            except Exception:
+                pass
 
             # 4. Users (Пользователи бота и мини-приложения)
             await cur.execute("""
@@ -185,11 +189,16 @@ class Database:
                     user_id INTEGER PRIMARY KEY,
                     username TEXT,
                     first_name TEXT,
+                    phone TEXT DEFAULT '',
                     balance REAL DEFAULT 0.0,
                     created_at TEXT NOT NULL,
                     last_seen_at TEXT NOT NULL
                 )
             """)
+            try:
+                await cur.execute("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''")
+            except Exception:
+                pass
 
             # 5. Chats / Groups (Группы и каналы)
             await cur.execute("""
@@ -434,22 +443,71 @@ class Database:
     # USER OPERATIONS
     # ==========================================
     async def upsert_user(
-        self, user_id: int, username: Optional[str] = None, first_name: Optional[str] = None
+        self,
+        user_id: int,
+        username: Optional[str] = None,
+        first_name: Optional[str] = None,
+        phone: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Record or update user activity"""
         now = utc_now_iso()
         conn = await self.connect()
         async with conn.cursor() as cur:
             await cur.execute("""
-                INSERT INTO users (user_id, username, first_name, created_at, last_seen_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (user_id, username, first_name, phone, created_at, last_seen_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                     username = COALESCE(excluded.username, users.username),
                     first_name = COALESCE(excluded.first_name, users.first_name),
+                    phone = CASE WHEN excluded.phone != '' AND excluded.phone IS NOT NULL THEN excluded.phone ELSE users.phone END,
                     last_seen_at = excluded.last_seen_at
-            """, (user_id, username, first_name, now, now))
+            """, (user_id, username, first_name, phone or '', now, now))
             await conn.commit()
-            return {"user_id": user_id, "username": username, "first_name": first_name}
+            return {"user_id": user_id, "username": username, "first_name": first_name, "phone": phone or ''}
+
+    async def check_nickname_available(self, nickname: str, current_user_id: int) -> bool:
+        """Check if nickname is free or already owned by current user"""
+        clean = nickname.strip().lstrip("@").lower()
+        if not clean or len(clean) < 3 or clean.startswith("user_"):
+            return False
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT user_id FROM users WHERE LOWER(username) = ? AND user_id != ?",
+                (clean, current_user_id)
+            )
+            row = await cur.fetchone()
+            return row is None
+
+    async def update_user_profile(
+        self,
+        user_id: int,
+        nickname: str,
+        phone: Optional[str] = None,
+        first_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Save participant chosen unique nickname and optional phone"""
+        clean_nick = nickname.strip().lstrip("@")
+        clean_phone = (phone or "").strip()
+        now = utc_now_iso()
+        conn = await self.connect()
+        async with conn.cursor() as cur:
+            await cur.execute("""
+                INSERT INTO users (user_id, username, phone, first_name, created_at, last_seen_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    username = excluded.username,
+                    phone = CASE WHEN excluded.phone != '' THEN excluded.phone ELSE users.phone END,
+                    first_name = COALESCE(excluded.first_name, users.first_name),
+                    last_seen_at = excluded.last_seen_at
+            """, (user_id, clean_nick, clean_phone, first_name or clean_nick, now, now))
+            await conn.commit()
+            return {
+                "user_id": user_id,
+                "username": clean_nick,
+                "phone": clean_phone,
+                "first_name": first_name or clean_nick,
+            }
 
     async def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get user by ID"""
@@ -540,9 +598,11 @@ class Database:
         conn = await self.connect()
         async with conn.cursor() as cur:
             await cur.execute("""
-                SELECT * FROM raffle_prizes
-                WHERE raffle_id = ?
-                ORDER BY place ASC, lot_number ASC
+                SELECT rp.*, COALESCE(u.phone, '') as winner_phone
+                FROM raffle_prizes rp
+                LEFT JOIN users u ON rp.winner_user_id = u.user_id
+                WHERE rp.raffle_id = ?
+                ORDER BY rp.place ASC, rp.lot_number ASC
             """, (raffle_id,))
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
@@ -556,9 +616,11 @@ class Database:
                        COALESCE(a.display_name, 'Главный Администратор') as creator_name,
                        COALESCE(a.username, 'superadmin') as creator_username,
                        COALESCE(a.sbp_phone, '') as creator_sbp_phone,
-                       COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank
+                       COALESCE(a.sbp_bank, 'СБП') as creator_sbp_bank,
+                       COALESCE(u.phone, '') as winner_phone
                 FROM raffles r
                 LEFT JOIN admins a ON r.creator_admin_id = a.id
+                LEFT JOIN users u ON r.winner_user_id = u.user_id
                 WHERE r.id = ?
             """, (raffle_id,))
             row = await cur.fetchone()
@@ -760,10 +822,12 @@ class Database:
         conn = await self.connect()
         async with conn.cursor() as cur:
             await cur.execute("""
-                SELECT id, raffle_id, ticket_number, status, user_id, username, reserved_until, sold_at
-                FROM tickets
-                WHERE raffle_id = ?
-                ORDER BY ticket_number ASC
+                SELECT t.id, t.raffle_id, t.ticket_number, t.status, t.user_id, t.username, t.reserved_until, t.sold_at,
+                       COALESCE(u.phone, '') as phone
+                FROM tickets t
+                LEFT JOIN users u ON t.user_id = u.user_id
+                WHERE t.raffle_id = ?
+                ORDER BY t.ticket_number ASC
             """, (raffle_id,))
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
@@ -896,6 +960,7 @@ class Database:
         sbp_pay_url: str,
         duration_minutes: int = 10,
         recipient_admin_id: str = "admin_super",
+        phone: Optional[str] = "",
     ) -> Dict[str, Any]:
         """Create a pending order for SBP payment routed to recipient admin"""
         now = datetime.now(timezone.utc)
@@ -910,18 +975,21 @@ class Database:
                 INSERT INTO orders (
                     id, raffle_id, user_id, username, ticket_numbers,
                     ticket_count, amount, status, sbp_qrid, sbp_pay_url,
-                    created_at, expires_at, recipient_admin_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
+                    created_at, expires_at, recipient_admin_id, phone
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
             """, (
                 order_id, raffle_id, user_id, username,
                 json.dumps(ticket_numbers), len(ticket_numbers), amount,
-                sbp_qrid, sbp_pay_url, created_at, expires_at, recipient_admin_id
+                sbp_qrid, sbp_pay_url, created_at, expires_at, recipient_admin_id,
+                phone or ""
             ))
             await conn.commit()
             return {
                 "order_id": order_id,
                 "raffle_id": raffle_id,
                 "user_id": user_id,
+                "username": username,
+                "phone": phone or "",
                 "amount": amount,
                 "ticket_numbers": ticket_numbers,
                 "sbp_qrid": sbp_qrid,
@@ -1083,11 +1151,13 @@ class Database:
         conn = await self.connect()
         async with conn.cursor() as cur:
             await cur.execute("""
-                SELECT * FROM orders
-                WHERE raffle_id = ?
-                  AND status = 'pending'
-                  AND expires_at > ?
-                ORDER BY created_at DESC
+                SELECT o.*, COALESCE(NULLIF(o.phone, ''), u.phone, '') as phone
+                FROM orders o
+                LEFT JOIN users u ON o.user_id = u.user_id
+                WHERE o.raffle_id = ?
+                  AND o.status = 'pending'
+                  AND o.expires_at > ?
+                ORDER BY o.created_at DESC
             """, (raffle_id, now_iso))
             rows = await cur.fetchall()
             results = []

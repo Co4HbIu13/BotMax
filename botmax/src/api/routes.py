@@ -27,8 +27,21 @@ api_router = APIRouter(prefix="/api")
 class ReserveTicketsRequest(BaseModel):
     user_id: int
     username: Optional[str] = "max_user"
+    phone: Optional[str] = ""
     ticket_numbers: Optional[List[int]] = None
     random_count: Optional[int] = None
+
+
+class CheckNicknameRequest(BaseModel):
+    nickname: str
+    user_id: int
+
+
+class UpdateUserProfileRequest(BaseModel):
+    user_id: int
+    nickname: str
+    phone: Optional[str] = ""
+    first_name: Optional[str] = None
 
 
 class SBPWebhookPayload(BaseModel):
@@ -156,27 +169,103 @@ def setup_routes(
             raise HTTPException(status_code=404, detail="Розыгрыш не найден")
         return {"success": True, "raffle": details}
 
+    @api_router.post("/users/check-nickname")
+    async def check_nickname(req: CheckNicknameRequest):
+        """Check if participant chosen nickname is valid and unique"""
+        clean = req.nickname.strip().lstrip("@")
+        if not clean or len(clean) < 3:
+            return {
+                "success": False,
+                "available": False,
+                "detail": "Никнейм должен содержать минимум 3 символа",
+            }
+        if len(clean) > 30:
+            return {
+                "success": False,
+                "available": False,
+                "detail": "Никнейм не может быть длиннее 30 символов",
+            }
+        if clean.lower().startswith("user_"):
+            return {
+                "success": False,
+                "available": False,
+                "detail": "Пожалуйста, придумайте оригинальный псевдоним (без 'user_')",
+            }
+
+        is_free = await db.check_nickname_available(clean, req.user_id)
+        if not is_free:
+            return {
+                "success": True,
+                "available": False,
+                "detail": "Этот никнейм уже занят другим участником. Пожалуйста, придумайте другой ник.",
+            }
+
+        return {
+            "success": True,
+            "available": True,
+            "nickname": clean,
+            "detail": "Никнейм свободен!",
+        }
+
+    @api_router.post("/users/profile")
+    async def update_user_profile(req: UpdateUserProfileRequest):
+        """Save participant chosen unique nickname and optional phone"""
+        clean = req.nickname.strip().lstrip("@")
+        if not clean or len(clean) < 3 or len(clean) > 30:
+            raise HTTPException(status_code=400, detail="Никнейм должен быть от 3 до 30 символов")
+        if clean.lower().startswith("user_"):
+            raise HTTPException(status_code=400, detail="Придумайте оригинальный никнейм без 'user_'")
+
+        is_free = await db.check_nickname_available(clean, req.user_id)
+        if not is_free:
+            raise HTTPException(status_code=400, detail="Этот никнейм уже занят другим участником")
+
+        user = await db.update_user_profile(
+            user_id=req.user_id,
+            nickname=clean,
+            phone=req.phone,
+            first_name=req.first_name,
+        )
+        return {"success": True, "user": user}
+
+    @api_router.get("/users/{user_id}")
+    async def get_user_profile(user_id: int):
+        """Get participant profile including nickname and phone"""
+        user = await db.get_user(user_id)
+        return {"success": True, "user": user}
+
     @api_router.post("/raffles/{raffle_id}/reserve")
     async def reserve_tickets(raffle_id: str, req: ReserveTicketsRequest):
         """
         Reserve tickets for SBP checkout.
         Atomically decreases available ticket pool ('убытие билетов') for 10 minutes.
         """
-        await db.upsert_user(user_id=req.user_id, username=req.username)
+        # Save or update participant info
+        clean_name = req.username or f"user_{req.user_id}"
+        if not clean_name.startswith("user_"):
+            await db.update_user_profile(
+                user_id=req.user_id,
+                nickname=clean_name,
+                phone=req.phone or "",
+            )
+        else:
+            await db.upsert_user(user_id=req.user_id, username=clean_name, phone=req.phone or "")
 
         if req.random_count and req.random_count > 0:
             result = await lottery_service.reserve_random_tickets(
                 raffle_id=raffle_id,
                 user_id=req.user_id,
-                username=req.username or f"user_{req.user_id}",
+                username=clean_name,
                 count=req.random_count,
+                phone=req.phone or "",
             )
         elif req.ticket_numbers:
             result = await lottery_service.reserve_specific_tickets(
                 raffle_id=raffle_id,
                 user_id=req.user_id,
-                username=req.username or f"user_{req.user_id}",
+                username=clean_name,
                 ticket_numbers=req.ticket_numbers,
+                phone=req.phone or "",
             )
         else:
             raise HTTPException(

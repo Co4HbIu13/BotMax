@@ -46,6 +46,7 @@ class LotteryService:
         user_id: int,
         username: str,
         ticket_numbers: List[int],
+        phone: Optional[str] = "",
     ) -> Dict[str, Any]:
         """
         Reserve specific tickets by numbers.
@@ -97,6 +98,7 @@ class LotteryService:
             sbp_pay_url=sbp_data["nspk_url"],
             duration_minutes=self.reservation_duration_minutes,
             recipient_admin_id=creator_admin_id,
+            phone=phone or "",
         )
 
         return {
@@ -123,6 +125,7 @@ class LotteryService:
         user_id: int,
         username: str,
         count: int = 1,
+        phone: Optional[str] = "",
     ) -> Dict[str, Any]:
         """
         Quick lucky pick: selects `count` random currently available tickets
@@ -143,6 +146,7 @@ class LotteryService:
             user_id=user_id,
             username=username,
             ticket_numbers=chosen,
+            phone=phone or "",
         )
 
     async def complete_sbp_payment(self, order_id: str) -> Dict[str, Any]:
@@ -308,6 +312,7 @@ class LotteryService:
             winning_num = win_t["ticket_number"]
             winner_user_id = win_t["user_id"]
             winner_username = win_t["username"] or f"user_{winner_user_id}"
+            winner_phone = win_t.get("phone", "")
 
             winners.append({
                 "prize_id": prize.get("id"),
@@ -317,6 +322,7 @@ class LotteryService:
                 "ticket_number": winning_num,
                 "user_id": winner_user_id,
                 "username": winner_username,
+                "phone": winner_phone,
             })
 
         # Update database with all winners

@@ -32,29 +32,57 @@
       .replace(/'/g, "&#039;");
   }
 
-  // Initialize User from URL Query Params or LocalStorage
+  // Initialize User from URL Query Params, WebApp SDK, or LocalStorage
   function initUser() {
     const urlParams = new URLSearchParams(window.location.search);
     const uid = urlParams.get("user_id") || localStorage.getItem("botmax_user_id");
     const uname = urlParams.get("username") || localStorage.getItem("botmax_username");
+    const storedNick = localStorage.getItem("botmax_nickname");
+    const storedPhone = localStorage.getItem("botmax_phone") || "";
 
     if (uid) {
       state.user.id = parseInt(uid, 10);
-      state.user.username = uname || `user_${state.user.id}`;
-      state.user.name = urlParams.get("first_name") || state.user.username;
     } else {
-      // Default / Demo user
       const randId = Math.floor(100000 + Math.random() * 900000);
       state.user.id = randId;
-      state.user.username = `user_${randId}`;
-      state.user.name = `Участник #${randId}`;
     }
+
+    // Determine nickname & whether participant has explicitly set it
+    if (storedNick && !storedNick.toLowerCase().startsWith("user_")) {
+      state.user.username = storedNick;
+      state.user.name = `@${storedNick}`;
+      state.user.isNickConfigured = true;
+    } else if (uname && !uname.toLowerCase().startsWith("user_")) {
+      state.user.username = uname;
+      state.user.name = `@${uname}`;
+      state.user.isNickConfigured = true;
+      localStorage.setItem("botmax_nickname", uname);
+    } else {
+      state.user.username = `user_${state.user.id}`;
+      state.user.name = `Участник #${state.user.id}`;
+      state.user.isNickConfigured = false;
+    }
+
+    state.user.phone = storedPhone;
 
     localStorage.setItem("botmax_user_id", state.user.id);
     localStorage.setItem("botmax_username", state.user.username);
+    if (state.user.phone) {
+      localStorage.setItem("botmax_phone", state.user.phone);
+    }
 
+    updateUserBadgeDisplay();
+  }
+
+  function updateUserBadgeDisplay() {
     const nameEl = document.getElementById("userNameDisplay");
-    if (nameEl) nameEl.textContent = state.user.name;
+    if (nameEl) {
+      if (state.user.isNickConfigured) {
+        nameEl.textContent = `@${state.user.username}`;
+      } else {
+        nameEl.textContent = "Задать Ник 🎭";
+      }
+    }
   }
 
   // Theme Management
@@ -504,11 +532,148 @@
     }
   }
 
+  // ==========================================
+  // PARTICIPANT NICKNAME & PROFILE MODAL
+  // ==========================================
+  let pendingReserveCallback = null;
+
+  function openParticipantProfileModal() {
+    const modal = document.getElementById("modalParticipantProfile");
+    const nickInput = document.getElementById("inputParticipantNickname");
+    const phoneInput = document.getElementById("inputParticipantPhone");
+    const errBox = document.getElementById("participantProfileError");
+
+    if (errBox) {
+      errBox.classList.add("hidden");
+      errBox.textContent = "";
+    }
+
+    if (nickInput) {
+      nickInput.value = state.user.isNickConfigured ? state.user.username : "";
+    }
+    if (phoneInput) {
+      phoneInput.value = state.user.phone || "";
+    }
+
+    if (modal) {
+      modal.classList.add("active");
+    }
+  }
+
+  function closeParticipantProfileModal() {
+    const modal = document.getElementById("modalParticipantProfile");
+    if (modal) {
+      modal.classList.remove("active");
+    }
+    pendingReserveCallback = null;
+  }
+
+  async function handleSaveParticipantProfile() {
+    const nickInput = document.getElementById("inputParticipantNickname");
+    const phoneInput = document.getElementById("inputParticipantPhone");
+    const errBox = document.getElementById("participantProfileError");
+    const saveBtn = document.getElementById("btnSaveParticipantProfile");
+
+    const rawNick = (nickInput?.value || "").trim().replace(/^@+/, "");
+    const rawPhone = (phoneInput?.value || "").trim();
+
+    if (!rawNick || rawNick.length < 3) {
+      if (errBox) {
+        errBox.textContent = "Никнейм должен содержать минимум 3 символа";
+        errBox.classList.remove("hidden");
+      }
+      return;
+    }
+    if (rawNick.toLowerCase().startsWith("user_")) {
+      if (errBox) {
+        errBox.textContent = "Пожалуйста, придумайте уникальный ник (без префикса 'user_')";
+        errBox.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      // 1. Check uniqueness
+      const checkRes = await fetch("/api/users/check-nickname", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname: rawNick, user_id: state.user.id }),
+      });
+      const checkData = await checkRes.json();
+      if (!checkData.available) {
+        if (errBox) {
+          errBox.textContent = checkData.detail || "Этот никнейм уже занят другим участником. Пожалуйста, придумайте другой ник.";
+          errBox.classList.remove("hidden");
+        }
+        if (saveBtn) saveBtn.disabled = false;
+        return;
+      }
+
+      // 2. Persist profile
+      const profRes = await fetch("/api/users/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: state.user.id,
+          nickname: rawNick,
+          phone: rawPhone,
+        }),
+      });
+      const profData = await profRes.json();
+      if (profRes.ok && profData.success) {
+        state.user.username = rawNick;
+        state.user.phone = rawPhone;
+        state.user.isNickConfigured = true;
+        localStorage.setItem("botmax_nickname", rawNick);
+        localStorage.setItem("botmax_username", rawNick);
+        if (rawPhone) {
+          localStorage.setItem("botmax_phone", rawPhone);
+        }
+        updateUserBadgeDisplay();
+        closeParticipantProfileModal();
+
+        // If checkout was waiting on nickname setup, proceed automatically!
+        if (typeof pendingReserveCallback === "function") {
+          const cb = pendingReserveCallback;
+          pendingReserveCallback = null;
+          cb();
+        }
+      } else {
+        if (errBox) {
+          errBox.textContent = profData.detail || "Ошибка при сохранении профиля";
+          errBox.classList.remove("hidden");
+        }
+      }
+    } catch (e) {
+      if (errBox) {
+        errBox.textContent = "Ошибка соединения с сервером";
+        errBox.classList.remove("hidden");
+      }
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
   function initCheckout() {
     const btnProceed = document.getElementById("btnProceedSbp");
     if (btnProceed) {
       btnProceed.addEventListener("click", startSbpCheckout);
     }
+
+    document.getElementById("userProfileBtn")?.addEventListener("click", () => {
+      openParticipantProfileModal();
+    });
+    document.getElementById("btnCloseProfileModal")?.addEventListener("click", () => {
+      closeParticipantProfileModal();
+    });
+    document.getElementById("participantProfileForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleSaveParticipantProfile();
+    });
+    document.getElementById("btnSaveParticipantProfile")?.addEventListener("click", () => {
+      handleSaveParticipantProfile();
+    });
 
     document.getElementById("btnCloseSbpModal")?.addEventListener("click", closeSbpModal);
     document.getElementById("btnCancelOrder")?.addEventListener("click", () => {
@@ -527,10 +692,18 @@
   async function startSbpCheckout() {
     if (state.selectedTickets.size === 0 || !state.currentRaffleId) return;
 
+    // Check if participant has chosen a unique nickname
+    if (!state.user.isNickConfigured) {
+      pendingReserveCallback = () => startSbpCheckout();
+      openParticipantProfileModal();
+      return;
+    }
+
     const ticketsArr = Array.from(state.selectedTickets);
     const payload = {
       user_id: state.user.id,
       username: state.user.username,
+      phone: state.user.phone || "",
       ticket_numbers: ticketsArr,
     };
 
